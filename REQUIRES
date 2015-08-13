@@ -1,0 +1,7 @@
+python-2.7 o python-3.4
+pyqt
+python-setuptools
+python-vtk
+python-numpy
+python-dev
+pyFOAM
