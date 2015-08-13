@@ -4,4 +4,5 @@ python-setuptools
 python-vtk
 python-numpy
 python-dev
+pyqt4-dev-tools
 pyFOAM
