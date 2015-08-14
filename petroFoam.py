@@ -1,5 +1,6 @@
 from PyQt4 import QtGui, QtCore
 from petroFoam_ui import petroFoamUI
+from popUpNew import *
 import os
 
 try:
@@ -19,7 +20,7 @@ except AttributeError:
 class petroFoam(petroFoamUI):
     def __init__(self):
         petroFoamUI.__init__(self)
-        self.currentFolder = './'
+        self.currentFolder = 'NONE'
     	#self.comboBoxMesh.currentIndexChanged[str].connect(self.updateMeshPanel)
 
     def updateMeshPanel(self):
@@ -33,9 +34,25 @@ class petroFoam(petroFoamUI):
         self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Open Folder', './');
 
     def saveAsCase(self):
+        oldFolder = self.currentFolder        
         self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './');
+        command = 'cp -r %s %s' % (oldFolder, self.currentFolder);
+        os.system(command)
 
+    def newCase(self):
+        w = popUpNew()
+        result = w.exec_()
+        if result:
+            data = w.getData()
+            print 'a grabar en %s/%s'%(data[1],data[0])
+        #self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './');
+        #command = 'cp -r template_icoFoam %s' % self.currentFolder;
+        #print command
+        #os.system(command)
+	
     def saveCase(self):
+        if self.currentFolder=='NONE':
+            self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './');
         print('Se guarda como %s',self.currentFolder)
 
     def openTerminal(self):
