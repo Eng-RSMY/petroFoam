@@ -6,3 +6,6 @@ python-numpy
 python-dev
 pyqt4-dev-tools
 pyFOAM
+https://pythonhosted.org/spyder/installation.html
+pip install rope
+pip install matplotlib
