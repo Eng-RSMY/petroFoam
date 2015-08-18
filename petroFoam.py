@@ -2,6 +2,12 @@ from PyQt4 import QtGui, QtCore
 from petroFoam_ui import petroFoamUI
 from popUpNew import *
 import os
+from math import *
+
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.figure import Figure
+
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -21,8 +27,51 @@ class petroFoam(petroFoamUI):
     def __init__(self):
         petroFoamUI.__init__(self)
         self.currentFolder = 'NONE'
-    	#self.comboBoxMesh.currentIndexChanged[str].connect(self.updateMeshPanel)
+        
+        #self.plotsScrollArea
+        #self.scrollAreaWidgetContents
 
+        qscrollLayout = QtGui.QGridLayout(self.scrollAreaWidgetContents)
+        qscrollLayout.setGeometry(QtCore.QRect(0, 0, 500, 300))
+        
+        qfigWidgets = [];
+        for i in xrange(5):
+          qfigWidgets.append(QtGui.QWidget(self.scrollAreaWidgetContents))
+        
+          fig = Figure((3.0, 2.0), dpi=100)
+          canvas = FigureCanvas(fig)
+          canvas.setParent(qfigWidgets[i])
+          toolbar = NavigationToolbar(canvas, qfigWidgets[i])
+          axes = fig.add_subplot(111)
+          axes.plot([i+1,2,3,4])
+        
+          # create a simple widget to extend the navigation toolbar
+          anotherWidget = QtGui.QPushButton()
+          # add the new widget to the existing navigation toolbar
+          toolbar.addWidget(anotherWidget)
+        
+          # place plot components in a layout
+          plotLayout = QtGui.QVBoxLayout()
+          plotLayout.addWidget(canvas)
+          plotLayout.addWidget(toolbar)
+          qfigWidgets[i].setLayout(plotLayout)
+        
+          # prevent the canvas to shrink beyond a point
+          # original size looks like a good minimum size
+          canvas.setMinimumSize(canvas.size())
+        
+          qscrollLayout.addWidget(qfigWidgets[i],i/2,i%2)
+          
+        self.scrollAreaWidgetContents.setLayout(qscrollLayout)
+        
+        removeItem = 2
+        qscrollLayout.removeWidget(qfigWidgets[removeItem])
+        qfigWidgets[removeItem].deleteLater()
+        for i in xrange(removeItem+1,5):
+            qfigWidgets[i-1] = qfigWidgets[i]
+            qscrollLayout.addWidget(qfigWidgets[i-1],(i-1)/2,(i-1)%2)
+            
+    	
     def updateMeshPanel(self):
         QtGui.QMessageBox.about(self, "ERROR", "Primero se debe calcular!")
 
