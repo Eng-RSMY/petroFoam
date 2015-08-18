@@ -49,6 +49,14 @@ class petroFoam(petroFoamUI):
           anotherWidget = QtGui.QPushButton()
           # add the new widget to the existing navigation toolbar
           toolbar.addWidget(anotherWidget)
+          #actionDelete = QtGui.QAction(self)
+          #icon7 = QtGui.QIcon()
+          #icon7.addPixmap(QtGui.QPixmap(_fromUtf8("images/fromHelyx/new16.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+          #actionDelete.setIcon(icon7)
+          #actionDelete.setObjectName(_fromUtf8("actionNew"))
+          #QtCore.QObject.connect(actionDelete, QtCore.SIGNAL(_fromUtf8("activated()")), petroFoam.removeFigure)        
+          #toolbar.insertWidget(actionDelete,anotherWidget)
+          
         
           # place plot components in a layout
           plotLayout = QtGui.QVBoxLayout()
@@ -118,6 +126,9 @@ class petroFoam(petroFoamUI):
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
             self.close()
+            
+    def removeFigure(self):
+        print "removiendo"
         
 if __name__ == '__main__':
 
