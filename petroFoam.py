@@ -126,7 +126,7 @@ class petroFoam(petroFoamUI):
         os.system('nautilus %s &'%self.currentFolder)
 
     def openParaview(self):
-        os.system('paraFoam -case %s &'%self.currentFolder)
+        os.system('paraFoam -builtin -case %s &'%self.currentFolder)
 
     def closeEvent(self, evnt):
         print "se intenta cerrar"
