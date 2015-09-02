@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="newPrefix">
+    <file>images/fromHelyx/emptyFigure.png</file>
     <file>images/fromHelyx/application_view_list16.png</file>
     <file>images/fromHelyx/arrow_down16.png</file>
     <file>images/fromHelyx/arrow-turn16.png</file>

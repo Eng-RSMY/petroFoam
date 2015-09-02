@@ -45,7 +45,7 @@
            <property name="currentIndex">
             <number>0</number>
            </property>
-           <widget class="QWidget" name="tab">
+           <widget class="QWidget" name="tab_mesh">
             <attribute name="title">
              <string>Mesh</string>
             </attribute>
@@ -151,12 +151,81 @@
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="tab_2">
+           <widget class="QWidget" name="tab_case_setup">
             <attribute name="title">
              <string>Case Setup</string>
             </attribute>
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="0" column="0">
+              <widget class="QTreeWidget" name="treeWidget">
+               <property name="maximumSize">
+                <size>
+                 <width>200</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <column>
+                <property name="text">
+                 <string>Case Setup</string>
+                </property>
+               </column>
+               <item>
+                <property name="text">
+                 <string>Solution Modeling</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Run Time Controls</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Boundary Conditions</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Materials</string>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>air</string>
+                 </property>
+                </item>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Numerical Schemes</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Solver Settings</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QScrollArea" name="scrollArea_case_setup">
+               <property name="widgetResizable">
+                <bool>true</bool>
+               </property>
+               <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>0</y>
+                  <width>332</width>
+                  <height>189</height>
+                 </rect>
+                </property>
+               </widget>
+              </widget>
+             </item>
+            </layout>
            </widget>
-           <widget class="QWidget" name="tab_3">
+           <widget class="QWidget" name="tab_solver">
             <attribute name="title">
              <string>Solver</string>
             </attribute>
@@ -166,22 +235,10 @@
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
              <widget class="QTabWidget" name="tabWidget_2">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>200</height>
-               </size>
-              </property>
               <property name="currentIndex">
                <number>-1</number>
               </property>
-              <property name="documentMode">
-               <bool>false</bool>
-              </property>
               <property name="tabsClosable">
-               <bool>true</bool>
-              </property>
-              <property name="movable">
                <bool>true</bool>
               </property>
              </widget>
@@ -216,7 +273,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>130</width>
+             <width>192</width>
              <height>464</height>
             </rect>
            </property>
@@ -298,6 +355,7 @@
    <addaction name="separator"/>
    <addaction name="actionHelp"/>
    <addaction name="actionRun"/>
+   <addaction name="actionParaview"/>
   </widget>
   <action name="actionNew">
    <property name="icon">
@@ -336,6 +394,10 @@
    </property>
   </action>
   <action name="actionExit">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/exit16.png</normaloff>:/newPrefix/images/fromHelyx/exit16.png</iconset>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
@@ -391,6 +453,18 @@
    </property>
    <property name="toolTip">
     <string>Run</string>
+   </property>
+  </action>
+  <action name="actionParaview">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/paraview16.png</normaloff>:/newPrefix/images/fromHelyx/paraview16.png</iconset>
+   </property>
+   <property name="text">
+    <string>Paraview</string>
+   </property>
+   <property name="toolTip">
+    <string>Open Paraview</string>
    </property>
   </action>
  </widget>
@@ -590,6 +664,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionParaview</sender>
+   <signal>activated()</signal>
+   <receiver>petroFoamUI</receiver>
+   <slot>openParaview()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>398</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>treeWidget</sender>
+   <signal>currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)</signal>
+   <receiver>petroFoamUI</receiver>
+   <slot>updateCaseSetup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>216</x>
+     <y>189</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>4</x>
+     <y>329</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>importMesh()</slot>
@@ -605,5 +711,7 @@
   <slot>createMesh()</slot>
   <slot>checkMesh()</slot>
   <slot>runCase()</slot>
+  <slot>openParaview()</slot>
+  <slot>updateCaseSetup()</slot>
  </slots>
 </ui>

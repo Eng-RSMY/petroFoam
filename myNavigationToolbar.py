@@ -139,4 +139,10 @@ class myNavigationToolbar( NavigationToolbar2QTAgg ):
                     
     def remove(self):
         self.window().removeFigure(self.canvas.parent())
+        
+    def disableButtons(self):
+        for act in self._actions:
+            if act != 'remove':
+                self._actions[act].setEnabled(False)
+        
 
