@@ -7,6 +7,9 @@ Created on Tue Aug 25 13:08:19 2015
 
 from PyQt4 import QtGui, QtCore
 from figureResiduals_ui import figureResidualsUI
+from myNavigationToolbar import *
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 import os
 
 try:
@@ -65,3 +68,45 @@ class figureResiduals(figureResidualsUI):
         else:
             self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
             
+            
+class figureResidualsWidget(QtGui.QWidget):
+
+    def __init__(self, scrollAreaWidgetContents):         
+        QtGui.QWidget.__init__(self)
+        self.setParent(scrollAreaWidgetContents)
+        fig = Figure((3.0, 2.0), dpi=100)
+        canvas = FigureCanvas(fig)
+        canvas.setParent(self)
+        toolbar = myNavigationToolbar(canvas, self)
+        axes = fig.add_subplot(111)
+        axes.autoscale(True)
+        axes.set_yscale('log')
+        axes.set_title('Residuals')
+        axes.set_xlabel('Time [s]')
+        axes.set_ylabel('|R|')
+
+         # place plot components in a layout
+        plotLayout = QtGui.QVBoxLayout()
+        plotLayout.addWidget(canvas)
+        plotLayout.addWidget(toolbar)
+        self.setLayout(plotLayout)
+
+        # prevent the canvas to shrink beyond a point
+        #original size looks like a good minimum size
+        canvas.setMinimumSize(canvas.size())
+
+    def plot(self, data):
+        axes.clear()
+        line0 = axes.plot(self.dataPlot['residuals.dat'][:,0],self.dataPlot['residuals.dat'][:,1],'r', label="U")
+        line1 = axes.plot(self.dataPlot['residuals.dat'][:,0],self.dataPlot['residuals.dat'][:,2],'b', label="p")
+        miny = numpy.amin(self.dataPlot['residuals.dat'][:,1:3])
+        maxy = miny*1e3
+        axes.set_ylim(miny,maxy)
+        axes.set_yscale('log')
+
+        axes.set_title('Residuals')
+        axes.set_xlabel('Time [s]')
+        axes.set_ylabel('|R|')
+        axes.legend(loc=1, fontsize = 'small')
+
+        canvas.draw()

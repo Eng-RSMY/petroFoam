@@ -9,6 +9,11 @@ from PyQt4 import QtGui, QtCore
 from figureSampledLine_ui import figureSampledLineUI
 import os
 
+from myNavigationToolbar import *
+from temporalNavigationToolbar import *
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -78,3 +83,27 @@ class figureSampledLine(figureSampledLineUI):
         else:
             self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
             
+            
+class figureSampledLineWidget(QtGui.QWidget):
+
+    def __init__(self, scrollAreaWidgetContents, data):         
+        QtGui.QWidget.__init__(self)
+        self.setParent(scrollAreaWidgetContents)
+        fig = Figure((3.0, 2.0), dpi=100)
+        canvas = FigureCanvas(fig)
+        canvas.setParent(self)
+        toolbar = myNavigationToolbar(canvas, self)
+        temporal_toolbar = temporalNavigationToolbar(canvas, self)
+        axes = fig.add_subplot(111)
+        axes.autoscale(True)
+        axes.set_yscale('log')
+        axes.set_title(data['name'])
+        
+         # place plot components in a layout
+        plotLayout = QtGui.QVBoxLayout()
+        plotLayout.addWidget(temporal_toolbar)
+        plotLayout.addWidget(canvas)
+        plotLayout.addWidget(toolbar)
+        self.setLayout(plotLayout)
+
+        canvas.setMinimumSize(canvas.size())
