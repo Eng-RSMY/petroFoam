@@ -8,6 +8,7 @@ Created on Tue Aug 25 13:08:19 2015
 from PyQt4 import QtGui, QtCore
 from solutionModeling_ui import Ui_solutionModelingUI
 import os
+from tracers import *
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -32,8 +33,9 @@ class solutionModelingUI(QtGui.QScrollArea, Ui_solutionModelingUI):
         
 class solutionModeling(solutionModelingUI):
 
-    def __init__(self):
+    def __init__(self, currentFolder):
         solutionModelingUI.__init__(self)
+        self.currentFolder = currentFolder
         
     def getData(self):
         data = {}
@@ -44,3 +46,10 @@ class solutionModeling(solutionModelingUI):
         
     def aplicar(self):
         return
+        
+    def editTracers(self):
+        w = tracers(self.currentFolder)
+        result = w.exec_()
+        if result:
+            w.saveCaseData()
+        

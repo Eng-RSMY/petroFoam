@@ -7,6 +7,12 @@ Created on Wed Aug 19 17:08:36 2015
 
 from PyQt4 import QtGui, QtCore
 
+def drange(start, stop, step):
+    r = start
+    while r < stop:
+        yield r
+        r += step
+
 def command_window(palette):
     brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
     brush.setStyle(QtCore.Qt.SolidPattern)

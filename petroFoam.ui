@@ -49,107 +49,6 @@
             <attribute name="title">
              <string>Mesh</string>
             </attribute>
-            <layout class="QGridLayout" name="gridLayout_2">
-             <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_create">
-               <property name="text">
-                <string>Create</string>
-               </property>
-               <property name="icon">
-                <iconset resource="resources.qrc">
-                 <normaloff>:/newPrefix/images/fromHelyx/new16.png</normaloff>:/newPrefix/images/fromHelyx/new16.png</iconset>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QComboBox" name="comboBoxMesh">
-               <item>
-                <property name="text">
-                 <string>From File</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Base Mesh</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>Type:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QPushButton" name="pushButton_import">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="text">
-                <string>Import</string>
-               </property>
-               <property name="icon">
-                <iconset resource="resources.qrc">
-                 <normaloff>:/newPrefix/images/fromHelyx/import16.png</normaloff>:/newPrefix/images/fromHelyx/import16.png</iconset>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="3">
-              <layout class="QGridLayout" name="gridLayout"/>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_check">
-               <property name="text">
-                <string>Check</string>
-               </property>
-               <property name="icon">
-                <iconset resource="resources.qrc">
-                 <normaloff>:/newPrefix/images/fromHelyx/tick16.png</normaloff>:/newPrefix/images/fromHelyx/tick16.png</iconset>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <spacer name="horizontalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="1" column="1" colspan="2">
-              <spacer name="horizontalSpacer">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="4" column="0">
-              <spacer name="verticalSpacer">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
            </widget>
            <widget class="QWidget" name="tab_case_setup">
             <attribute name="title">
@@ -173,24 +72,49 @@
                 <property name="text">
                  <string>Solution Modeling</string>
                 </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</iconset>
+                </property>
                </item>
                <item>
                 <property name="text">
                  <string>Run Time Controls</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/cog16.png</normaloff>:/newPrefix/images/fromHelyx/cog16.png</iconset>
                 </property>
                </item>
                <item>
                 <property name="text">
                  <string>Boundary Conditions</string>
                 </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</iconset>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Initial Conditions</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</iconset>
+                </property>
                </item>
                <item>
                 <property name="text">
                  <string>Materials</string>
                 </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</iconset>
+                </property>
                 <item>
                  <property name="text">
-                  <string>air</string>
+                  <string>phase 1</string>
                  </property>
                 </item>
                </item>
@@ -198,10 +122,18 @@
                 <property name="text">
                  <string>Numerical Schemes</string>
                 </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/calculator16.png</normaloff>:/newPrefix/images/fromHelyx/calculator16.png</iconset>
+                </property>
                </item>
                <item>
                 <property name="text">
                  <string>Solver Settings</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="resources.qrc">
+                  <normaloff>:/newPrefix/images/fromHelyx/parMap16.png</normaloff>:/newPrefix/images/fromHelyx/parMap16.png</iconset>
                 </property>
                </item>
               </widget>
@@ -216,8 +148,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>332</width>
-                  <height>189</height>
+                  <width>359</width>
+                  <height>387</height>
                  </rect>
                 </property>
                </widget>
@@ -225,9 +157,14 @@
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="tab_solver">
+           <widget class="QWidget" name="tab_run">
             <attribute name="title">
-             <string>Solver</string>
+             <string>Run</string>
+            </attribute>
+           </widget>
+           <widget class="QWidget" name="tab_postpro">
+            <attribute name="title">
+             <string>Postprocessing</string>
             </attribute>
            </widget>
           </widget>
@@ -273,7 +210,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>192</width>
+             <width>165</width>
              <height>464</height>
             </rect>
            </property>
@@ -359,8 +296,8 @@
   </widget>
   <action name="actionNew">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/new16.png</normaloff>images/fromHelyx/new16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/new16.png</normaloff>:/newPrefix/images/fromHelyx/new16.png</iconset>
    </property>
    <property name="text">
     <string>New</string>
@@ -368,8 +305,8 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/open16.png</normaloff>images/fromHelyx/open16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/open16.png</normaloff>:/newPrefix/images/fromHelyx/open16.png</iconset>
    </property>
    <property name="text">
     <string>Open</string>
@@ -377,8 +314,8 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/save16.png</normaloff>images/fromHelyx/save16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/save16.png</normaloff>:/newPrefix/images/fromHelyx/save16.png</iconset>
    </property>
    <property name="text">
     <string>Save</string>
@@ -386,8 +323,8 @@
   </action>
   <action name="actionSave_As">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/saveAs16.png</normaloff>images/fromHelyx/saveAs16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/saveAs16.png</normaloff>:/newPrefix/images/fromHelyx/saveAs16.png</iconset>
    </property>
    <property name="text">
     <string>Save As</string>
@@ -404,8 +341,8 @@
   </action>
   <action name="actionTerminal">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/terminal16.png</normaloff>images/fromHelyx/terminal16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/console16.png</normaloff>:/newPrefix/images/fromHelyx/console16.png</iconset>
    </property>
    <property name="text">
     <string>Terminal</string>
@@ -416,8 +353,8 @@
   </action>
   <action name="actionBrowse">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/browseFolder16.png</normaloff>images/fromHelyx/browseFolder16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/browseFolder16.png</normaloff>:/newPrefix/images/fromHelyx/browseFolder16.png</iconset>
    </property>
    <property name="text">
     <string>Browse</string>
@@ -428,8 +365,8 @@
   </action>
   <action name="actionHelp">
    <property name="icon">
-    <iconset>
-     <normaloff>images/fromHelyx/info16.png</normaloff>images/fromHelyx/info16.png</iconset>
+    <iconset resource="resources.qrc">
+     <normaloff>:/newPrefix/images/fromHelyx/info16.png</normaloff>:/newPrefix/images/fromHelyx/info16.png</iconset>
    </property>
    <property name="text">
     <string>Help</string>
@@ -473,22 +410,6 @@
  </resources>
  <connections>
   <connection>
-   <sender>comboBoxMesh</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>petroFoamUI</receiver>
-   <slot>updateMeshPanel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>197</x>
-     <y>147</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>398</x>
-     <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>actionExit</sender>
    <signal>activated()</signal>
    <receiver>petroFoamUI</receiver>
@@ -501,22 +422,6 @@
     <hint type="destinationlabel">
      <x>398</x>
      <y>299</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButton_import</sender>
-   <signal>pressed()</signal>
-   <receiver>petroFoamUI</receiver>
-   <slot>importMesh()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>66</x>
-     <y>246</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>442</x>
-     <y>79</y>
     </hint>
    </hints>
   </connection>
@@ -617,38 +522,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>pushButton_create</sender>
-   <signal>pressed()</signal>
-   <receiver>petroFoamUI</receiver>
-   <slot>createMesh()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>76</x>
-     <y>174</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>0</x>
-     <y>204</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>pushButton_check</sender>
-   <signal>pressed()</signal>
-   <receiver>petroFoamUI</receiver>
-   <slot>checkMesh()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>37</x>
-     <y>201</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>6</x>
-     <y>197</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>actionRun</sender>
    <signal>activated()</signal>
    <receiver>petroFoamUI</receiver>
@@ -713,5 +586,8 @@
   <slot>runCase()</slot>
   <slot>openParaview()</slot>
   <slot>updateCaseSetup()</slot>
+  <slot>drawGeo()</slot>
+  <slot>saveBlockMesh()</slot>
+  <slot>drawStatistics()</slot>
  </slots>
 </ui>

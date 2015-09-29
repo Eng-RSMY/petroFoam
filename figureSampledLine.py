@@ -83,10 +83,9 @@ class figureSampledLine(figureSampledLineUI):
         else:
             self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
             
-            
 class figureSampledLineWidget(QtGui.QWidget):
 
-    def __init__(self, scrollAreaWidgetContents, data):         
+    def __init__(self, scrollAreaWidgetContents, dataname):         
         QtGui.QWidget.__init__(self)
         self.setParent(scrollAreaWidgetContents)
         fig = Figure((3.0, 2.0), dpi=100)
@@ -97,7 +96,7 @@ class figureSampledLineWidget(QtGui.QWidget):
         axes = fig.add_subplot(111)
         axes.autoscale(True)
         axes.set_yscale('log')
-        axes.set_title(data['name'])
+        axes.set_title(dataname)
         
          # place plot components in a layout
         plotLayout = QtGui.QVBoxLayout()
