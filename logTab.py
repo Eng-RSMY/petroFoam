@@ -7,8 +7,11 @@ Created on Tue Aug 25 13:08:19 2015
 
 from PyQt4 import QtGui, QtCore
 import os
+import time
 
 from utils import command_window
+
+from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -26,7 +29,9 @@ except AttributeError:
 
 class logTab(QtGui.QWidget):
     
-    def __init__(self, filename):
+    def __init__(self, filename, currentFolder):
+        self.currentFolder = currentFolder
+        self.filename = filename
         QtGui.QWidget.__init__(self)
         self.setObjectName(filename)
         new_gridLayout = QtGui.QGridLayout(self)
@@ -63,4 +68,42 @@ class logTab(QtGui.QWidget):
         new_pushButton_3.setIcon(icon5)
         new_pushButton_3.setObjectName(_fromUtf8("pushButton_3"))
         new_gridLayout.addWidget(new_pushButton_3, 0, 0, 1, 1)
+        
+        if 'run.log' in filename:
+            new_pushButton_3.setEnabled(True)
+            
+        QtCore.QObject.connect(new_pushButton,QtCore.SIGNAL(_fromUtf8("pressed()")), self.saveLog)
+        QtCore.QObject.connect(new_pushButton_2,QtCore.SIGNAL(_fromUtf8("pressed()")), self.openLog)
+        QtCore.QObject.connect(new_pushButton_3,QtCore.SIGNAL(_fromUtf8("pressed()")), self.stopRun)
     
+    def stopRun(self):
+            
+        filename = '%s/system/controlDict'%self.currentFolder
+        parsedData = ParsedParameterFile(filename,createZipped=False)
+        parsedData['stopAt'] = 'writeNow'
+        parsedData.writeFile()
+        
+        self.findChild(QtGui.QPushButton,'pushButton_3').setEnabled(False)
+
+        while 1:
+            command = 'ps | cut -d " " -f 7 | grep Foam > %s/runningNow'%self.currentFolder
+            os.system(command)        
+            f = open('%s/runningNow'%self.currentFolder, 'r')
+            if not f.read():
+                break
+            f.close()
+            time.sleep(0.1)
+
+        self.window().runW.pushButton_run.setEnabled(True)  
+        self.window().runW.pushButton_reset.setEnabled(True)  
+            
+
+    def saveLog(self):
+        outfile = QtGui.QFileDialog.getSaveFileName(self, 'Select filename', self.currentFolder, 'Log File (*.log)');
+        if outfile:
+            command = 'cp %s %s'%(self.filename,outfile)
+            os.system(command)
+        
+    def openLog(self):
+        command = 'gedit %s &'%self.filename
+        os.system(command)

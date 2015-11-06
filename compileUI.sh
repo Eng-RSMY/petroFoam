@@ -13,3 +13,6 @@ pyuic4 -w tracers.ui -o tracers_ui.py
 pyuic4 run.ui -o run_ui.py
 pyuic4 postpro.ui -o postpro_ui.py
 pyuic4 -w bc.ui -o bc_ui.py
+pyuic4 initialConditions.ui -o initialConditions_ui.py
+pyuic4 -w reset.ui -o reset_ui.py
+pyuic4 -w bcPatch.ui -o bcPatch_ui.py

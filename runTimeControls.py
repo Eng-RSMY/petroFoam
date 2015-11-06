@@ -79,7 +79,6 @@ class runTimeControls(runTimeControlsUI):
     def loadData(self):
         filename = '%s/system/controlDict'%self.currentFolder
         parsedData = ParsedParameterFile(filename,createZipped=False)
-        parsedDict = parsedData.getValueDict().keys()
         
         self.cb_start_from.setCurrentIndex(self.cb_start_from_ii[parsedData['startFrom']]) if parsedData.__contains__('startFrom') else None
         self.start_from.setText(str(parsedData['startTime'])) if parsedData.__contains__('startTime') else None
@@ -126,12 +125,20 @@ class runTimeControls(runTimeControlsUI):
             self.max_deltat.setEnabled(False)
         
     def onChangeSomething(self):
-        self.pushButton.setEnabled(True)
+        ready = True
+        edits = self.findChildren(QtGui.QLineEdit)
+        for E in edits:
+            if E.isEnabled():
+                if not E.text():
+                        ready = False
+        if ready:
+            self.pushButton.setEnabled(True)
+        else:
+            self.pushButton.setEnabled(False)
 
     def aplicar(self):
         filename = '%s/system/controlDict'%self.currentFolder
         parsedData = ParsedParameterFile(filename,createZipped=False)
-        parsedDict = parsedData.getValueDict().keys()
         
         parsedData['startFrom'] = self.cb_start_from_iinv[self.cb_start_from.currentIndex()]
         parsedData['startTime'] = self.start_from.text()
@@ -151,6 +158,7 @@ class runTimeControls(runTimeControlsUI):
         parsedData['writeFormat'] = self.format_iinv[self.format.currentIndex()]
         parsedData['timePrecision'] = self.precision_time.value()
         parsedData['writeCompression'] = self.compression_iinv[self.compression.currentIndex()]
+        parsedData['stopAt'] = 'endTime'
         
         parsedData.writeFile()
         

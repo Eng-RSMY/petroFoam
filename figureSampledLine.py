@@ -7,12 +7,17 @@ Created on Tue Aug 25 13:08:19 2015
 
 from PyQt4 import QtGui, QtCore
 from figureSampledLine_ui import figureSampledLineUI
-import os
 
 from myNavigationToolbar import *
 from temporalNavigationToolbar import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+
+from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
+
+from utils import *
+import pylab
+
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -28,11 +33,52 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
+
+# sampleSet
+#  {
+#    type sets;
+#    interpolationScheme cellPoint;
+#    outputControl timeStep;
+#    outputInterval 20;
+#    setFormat raw;
+#    sets
+#      (
+#        data
+#
+#        {
+#          type uniform;
+#          axis y;
+#          start (0.05 0 0);
+#          end (0.05 0.1 0);
+#          nPoints 50;
+#
+#        }
+#      );
+#    fields
+#      (
+#        U
+#        p
+#      );
+#  }
+#
+
 class figureSampledLine(figureSampledLineUI):
 
-    def __init__(self):
+    def __init__(self, currentFolder):
         figureSampledLineUI.__init__(self)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
+        self.currentFolder = currentFolder        
+        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        
+        [self.timedir,self.fields,bas] = currentFields(self.currentFolder)
+        
+        self.comboBox.clear()
+        for field in self.fields:
+#            if types[field] == 'vector':
+#                for idim in ['x','y','z']:
+#                    self.comboBox.addItem('%s%s'%(field,idim))
+#            elif types[field] == 'scalar':
+            self.comboBox.addItem(field)
+            
         self.p1_x.setValidator(QtGui.QDoubleValidator())
         self.p1_y.setValidator(QtGui.QDoubleValidator())
         self.p1_z.setValidator(QtGui.QDoubleValidator())
@@ -58,8 +104,8 @@ class figureSampledLine(figureSampledLineUI):
         
     def setData(self,data):
         
-        self.spinBox.setValue(data['nsteps']) if 'nsteps' in data.keys() else None
-        self.nop.setValue(data['nop']) if 'nop' in data.keys() else None
+        #self.spinBox.setValue(data['nsteps']) if 'nsteps' in data.keys() else None
+        #self.nop.setValue(data['nop']) if 'nop' in data.keys() else None
         self.name.setText(data['name']) if 'name' in data.keys() else None
         
         #self.comboBox.setCurrentText(data['field']) if 'field' in data.keys()  else None
@@ -72,16 +118,64 @@ class figureSampledLine(figureSampledLineUI):
         self.p2_y.setText(data['p2y']) if 'p2y' in data.keys() else None
         self.p2_z.setText(data['p2z']) if 'p2z' in data.keys() else None
         
+        filename = '%s/system/controlDict'%(self.currentFolder)
+        parsedData = ParsedParameterFile(filename,createZipped=False)
+        if 'functions' in parsedData.getValueDict().keys():
+            if data['name'] in parsedData['functions'].keys():
+                dicc = parsedData['functions'][data['name']]
+                if dicc['type']=='sets':
+                    self.name.setText(data['name'])
+                    self.spinBox.setValue(dicc['outputInterval'])                    
+        
         return data
         
     def ckeckAccept(self):
 
-        allow = True
-
-        if allow:
+        ready = True
+        edits = self.findChildren(QtGui.QLineEdit)
+        for E in edits:
+            if E.isEnabled():
+                if not E.text():
+                    ready = False
+        if ready:
             self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(True)
         else:
             self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        
+        
+    def accept(self):
+        filename = '%s/system/controlDict'%(self.currentFolder)
+        parsedData = ParsedParameterFile(filename,createZipped=False)
+        if 'functions' not in parsedData.getValueDict().keys():
+            parsedData['functions'] = {}
+        if self.name.text() not in parsedData['functions'].keys():
+            parsedData['functions'][self.name.text()] = {}
+        
+        parsedData['functions'][self.name.text()]['type'] = 'sets'
+        parsedData['functions'][self.name.text()]['outputControl'] = 'timeStep'
+        parsedData['functions'][self.name.text()]['outputInterval'] = self.spinBox.value()
+        parsedData['functions'][self.name.text()]['setFormat'] = 'raw'
+        parsedData['functions'][self.name.text()]['interpolationScheme'] = 'cellPoint'
+        ifield = self.comboBox.currentText()
+        if ifield not in self.fields:
+            #significa que es un vector
+            axis = 'distance' #ifield[-1]
+            ifield = ifield[0:-1]
+        else:
+            axis = 'distance' #por las dudas        
+        parsedData['functions'][self.name.text()]['fields'] = [ifield]
+        
+        dicc = {}
+        dicc['nPoints'] = self.nop.text()
+        dicc['start'] = '(%s %s %s)'%(self.p1_x.text(),self.p1_y.text(),self.p1_z.text())
+        dicc['end'] = '(%s %s %s)'%(self.p2_x.text(),self.p2_y.text(),self.p2_z.text())
+        dicc['type'] = 'uniform'
+        dicc['axis'] = axis
+        parsedData['functions'][self.name.text()]['sets'] = ['data',dicc]
+        
+        parsedData.writeFile()
+        
+        self.done(self.Accepted)
             
 class figureSampledLineWidget(QtGui.QWidget):
 
@@ -106,3 +200,46 @@ class figureSampledLineWidget(QtGui.QWidget):
         self.setLayout(plotLayout)
 
         canvas.setMinimumSize(canvas.size())
+        
+        self.name = dataname
+        self.dirList = []
+        self.dirType = 'Sampled Line'
+        self.lastPos = -1
+        self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
+        self.labels = ['_x','_y','_z']
+
+    def plot(self):
+        if self.lastPos<0:
+            return
+        canvas = self.findChild(FigureCanvas)
+        timeLegend = self.findChild(QtGui.QLineEdit)
+        axes = canvas.figure.gca()
+        filename = '%s/postProcessing/%s/%s/data_U.xy'%(self.window().currentFolder,self.name,self.dirList[self.lastPos])
+        data = pylab.loadtxt(filename)
+        if len(data)>0:
+            axes.clear()
+            #@TODO
+            #Fijarse que el sample guarda todos los datos de velocidad, y axis indica el eje de las abcisas
+            if data.shape[1]>1:
+                for ii in range(data.shape[1]-1):
+                    axes.plot(data[:,0],data[:,ii+1],self.colors[ii]) #, label=self.labels[ii])
+            else:
+                axes.plot(data[:,0],data[:,1],'r',label='self.name')
+                
+            timeLegend.setText(self.dirList[self.lastPos])
+            axes.set_title(self.name)
+            axes.set_xlabel('distance')
+            #axes.set_ylabel('|R|')
+            axes.legend(loc=2, fontsize = 'small')
+        canvas.draw()
+
+    def resetFigure(self):
+        self.dirList = []
+        self.dirType = 'Sampled Line'
+        self.lastPos = -1
+        self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
+        self.labels = ['_x','_y','_z']
+        
+        canvas = self.findChild(FigureCanvas)
+        canvas.figure.gca().cla()
+        canvas.draw()

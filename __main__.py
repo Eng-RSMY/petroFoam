@@ -11,16 +11,14 @@ from solutionModeling import *
 from mesh import *
 from run import *
 from bc import *
+from initialConditions import *
 from postpro import *
 from logTab import *
 import os
 from math import *
 import time
 import threading
-import numpy
 import pickle
-
-import pylab
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -53,15 +51,9 @@ class petroFoam(petroFoamUI):
         
         self.solvername = 'icoFoam'
         self.firstPlot = 1
-        self.controlDict = {}
-        self.controlDict['startTime'] = 0.0
-        
 
-        self.lastPos = {}
         self.typeFile = {}
-        self.dataPlot = {}
-        self.dirList = {}
-        self.dirType = {}
+        self.lastPos = {}
 
         self.qscrollLayout = QtGui.QGridLayout(self.scrollAreaWidgetContents)
         self.qscrollLayout.setGeometry(QtCore.QRect(0, 0, 500, 300))
@@ -84,7 +76,7 @@ class petroFoam(petroFoamUI):
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
         self.horizontalLayout_3.addWidget(self.meshW)
         
-        self.runW = runWidget()
+        self.runW = runWidget(self.currentFolder)
         self.runW.setParent(self)
         self.horizontalLayout_4 = QtGui.QHBoxLayout(self.tab_run)
         self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
@@ -162,13 +154,18 @@ class petroFoam(petroFoamUI):
         if index<2:
             return
         index = index - 2
+        addFigure = False
+        
+        print self.typeFigure[index]
         if self.typeFigure[index] == 'Residuals':
-            w = figureResiduals()
+            w = figureResiduals(self.currentFolder)
             result = w.exec_()
+            filename = ''
             if result:
                 data = w.getData()
+                [bas1,bas2,currtime] = currentFields(self.currentFolder)
                 addFigure = True
-                filename = 'postProcessing/%s/%s/residuals.dat'%(str(data['name']),str(self.controlDict['startTime']))
+                filename = 'postProcessing/%s/%s/residuals.dat'%(str(data['name']),currtime)
                 if(os.path.isfile('%s/%s'%(self.currentFolder,filename))):
                     w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The output file already exists, do yo want to remove it? (If not, you must choose another log name)", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
                     ret = w.exec_()
@@ -177,35 +174,18 @@ class petroFoam(petroFoamUI):
                         os.system(command)
                     else:
                         addFigure = False
-
-                if addFigure:
-                    i = self.nPlots
-                    ww = figureResidualsWidget(self.scrollAreaWidgetContents)
-
-                    self.qfigWidgets.insert(i, ww)
-
-                    #agrego el nuevo plot
-                    self.qscrollLayout.addWidget(self.qfigWidgets[i],i/2,i%2)
-                    #vuelvo a ubicar el boton
-                    self.qscrollLayout.addWidget(self.qfigWidgets[i+1],(i+1)/2,(i+1)%2)
-                    self.nPlots = self.nPlots+1
-
-                    self.pending_files.append(filename)
-                    self.qfigWidgets[i].setObjectName(data['name'])
-                    self.dataPlot[data['name']] = []                    
-                    self.dirList[data['name']] = []
-                    self.dirType[data['name']] = 'Residuals'
-                    self.lastPos[data['name']] = -1
-                    
+            if addFigure:
+                ww = figureResidualsWidget(self.scrollAreaWidgetContents, data['name'])
+                self.pending_files.append(filename)
 
         if self.typeFigure[index] == 'Sampled Line':
-            w = figureSampledLine()
+            w = figureSampledLine(self.currentFolder)
             result = w.exec_()
             if result:
                 data = w.getData()
-
-                addFigure = True
+                print data
                 dirname = 'postProcessing/%s'%data['name']
+                addFigure = True
                 if(os.path.isdir('%s/%s'%(self.currentFolder,dirname))):
                     w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The output directory '%s' already exists, do yo want to remove it?"%'%s/%s'%(self.currentFolder,dirname), QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
                     ret = w.exec_()
@@ -213,84 +193,95 @@ class petroFoam(petroFoamUI):
                         command = 'rm -r %s/%s'%(self.currentFolder,dirname)
                         os.system(command)
                     else:
-                        addFigure = False
-
-                if addFigure:
-
-                    i = self.nPlots
-                    ww = figureSampledLineWidget(self.scrollAreaWidgetContents, data['name'])
-                    self.qfigWidgets.insert(i, ww)
-
-                    #agrego el nuevo plot
-                    self.qscrollLayout.addWidget(self.qfigWidgets[i],i/2,i%2)
-                    #vuelvo a ubicar el boton
-                    self.qscrollLayout.addWidget(self.qfigWidgets[i+1],(i+1)/2,(i+1)%2)
-                    self.nPlots = self.nPlots+1
-
-                    if data['autorefreshing']:
-                        self.pending_dirs.append(dirname)
-
-                    self.qfigWidgets[i].setObjectName(data['name'])
-                    self.dirList[data['name']] = []
-                    self.dirType[data['name']] = 'Sampled Line'
-                    self.lastPos[data['name']] = -1
-
+                        addFigure = False                
+                if data['autorefreshing']=='Yes' and addFigure:
+                    self.pending_dirs.append(dirname)
+            
+            if addFigure:
+                ww = figureSampledLineWidget(self.scrollAreaWidgetContents, data['name'])
+                        
         if self.typeFigure[index] == 'General Snapshot':
-                fileName = QtGui.QFileDialog.getOpenFileName(self, 'Select Paraview State', self.currentFolder, 'Paraview state (*.pvsm)');
-
-                if fileName:
-                    data_name = os.path.basename(fileName)
-                    data_name = data_name[:-5]
-                    newdir = '%s/snapshots/%s'%(self.currentFolder,data_name)
-                    addFigure = True
-                    if os.path.isdir('%s'%newdir):
-                        w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The output directory '%s' already exists, do yo want to remove it?"%(newdir), QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-                        ret = w.exec_()
-                        if(QtGui.QMessageBox.Yes == ret):
-                            command = 'rm -r %s'%newdir
-                            os.system(command)
-                        else:
-                            addFigure = False
-
-                    if addFigure:
-
-                        i = self.nPlots
-                        ww = figureGeneralSnapshotWidget(self.scrollAreaWidgetContents)
-                        self.qfigWidgets.insert(i, ww)
-
-                        self.qscrollLayout.addWidget(self.qfigWidgets[i],i/2,i%2)
-                        self.qscrollLayout.addWidget(self.qfigWidgets[i+1],(i+1)/2,(i+1)%2)
-                        self.nPlots = self.nPlots+1
-
-                        command = 'mkdir -p %s'%(newdir)
+            fileName = QtGui.QFileDialog.getOpenFileName(self, 'Select Paraview State', self.currentFolder, 'Paraview state (*.pvsm)');
+            newdir = ''
+            data_name = ''
+            if fileName:
+                data_name = os.path.basename(fileName)
+                data_name = data_name[:-5]
+                newdir = '%s/snapshots/%s'%(self.currentFolder,data_name)
+                addFigure = True
+                if os.path.isdir('%s'%newdir):
+                    w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The output directory '%s' already exists, do yo want to remove it?"%(newdir), QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+                    ret = w.exec_()
+                    if(QtGui.QMessageBox.Yes == ret):
+                        command = 'rm -r %s'%newdir
                         os.system(command)
-                        #hago una copia del pvsm para tenerlo siempre accesible
-                        command = 'cp %s %s/%s.pvsm'%(fileName,self.currentFolder,data_name)
-                        os.system(command)
-                        self.qfigWidgets[i].setObjectName(data_name)
-                        self.dirList[data_name] = []
-                        self.dirType[data_name] = 'General Snapshot'
-                        self.lastPos[data_name] = -1
-                        #no lo agrego al watcher porque va a ser manual
-                        #self.fs_watcher.addPath('%s'%newdir)
+                    else:
+                        addFigure = False
+            if addFigure:
+                ww = figureGeneralSnapshotWidget(self.scrollAreaWidgetContents)     
+                command = 'mkdir -p %s'%(newdir)
+                os.system(command)
+                #hago una copia del pvsm para tenerlo siempre accesible
+                command = 'cp %s %s/%s.pvsm'%(fileName,self.currentFolder,data_name)
+                os.system(command)
+            else:
+                print 'nothing selected'
 
-                else:
-                    print 'nothing selected'
+        if addFigure:
+            i = self.nPlots
+            self.qfigWidgets.insert(i, ww)
+
+            #agrego el nuevo plot
+            self.qscrollLayout.addWidget(self.qfigWidgets[i],i/2,i%2)
+            #vuelvo a ubicar el boton
+            self.qscrollLayout.addWidget(self.qfigWidgets[i+1],(i+1)/2,(i+1)%2)
+            self.nPlots = self.nPlots+1
+            self.qfigWidgets[i].setObjectName(data['name'])
 
         self.qfigWidgets[self.nPlots].setCurrentIndex(0)
 
+        
+    def resetFigures(self,postpro=False,snapshots=False):
+        
+        [bas1,bas2,currtime] = currentFields(self.currentFolder)
+        for i in range(self.nPlots):
+            if isinstance(self.qfigWidgets[i],figureResidualsWidget) and postpro:  
+                self.qfigWidgets[i].resetFigure()
+                filename = 'postProcessing/%s/%s/residuals.dat'%(self.qfigWidgets[i].objectName(),currtime)
+                self.pending_files.append(filename)
+            elif isinstance(self.qfigWidgets[i],figureSampledLineWidget) and postpro:  
+                self.qfigWidgets[i].resetFigure()
+                dirname = 'postProcessing/%s'%self.qfigWidgets[i].objectName()
+                #Solo agregar si se eligio autorefreshing             
+                self.pending_dirs.append(dirname)  
+            elif isinstance(self.qfigWidgets[i],figureGeneralSnapshotWidget) and snapshots:  
+                self.qfigWidgets[i].resetFigure()
+            else:
+                None
+
     def newLogTab(self,name,filename):
 
-        new_tab = logTab(filename)
+        new_tab = logTab(filename,self.currentFolder)
 
+        already = False
         if  self.lastPos.has_key(filename):
             for i in range(self.tabWidget_2.count()):
                 if self.tabWidget_2.widget(i).objectName()==filename:
-                    self.closeLogTab(i)
+                    self.findChild(QtGui.QWidget,filename).findChild(QtGui.QTextEdit,_fromUtf8("textEdit")).clear()
+                    already = True
                     break
 
-        self.tabWidget_2.addTab(new_tab, name)
-        self.fs_watcher.addPath(filename)
+        if not already:
+            self.tabWidget_2.addTab(new_tab, name)
+            self.tabWidget_2.widget(self.tabWidget_2.count()-1).setObjectName(filename)
+        
+        if not os.path.isfile(filename):
+            command = 'touch %s'%filename
+            os.system(command)
+        
+        if filename not in self.fs_watcher.files():
+            self.fs_watcher.addPath(filename)
+        
         self.lastPos[filename] = 0
         self.typeFile[filename] = 'log'
 
@@ -306,96 +297,54 @@ class petroFoam(petroFoamUI):
 
     def file_changed(self,path):
         self.fs_watcher.removePath(path)
-
+        
         if self.typeFile[path]=='log':
             toModify = self.findChild(QtGui.QWidget,path)
             textEdit = toModify.findChild(QtGui.QTextEdit,_fromUtf8("textEdit"))
             N = self.lastPos[path]
-            ini = time.time()
             with open(path, 'r') as yourFile:
                 yourFile.seek(N)
                 newTexto = yourFile.read()
-
+            
             if(len(newTexto)>1):
                 textEdit.append(newTexto)
                 self.lastPos[path] = N + len(newTexto)
 
         if self.typeFile[path]=='plot':
-
             key = ''
-            for ikey in self.dataPlot.keys():
-
+            for qfw in self.qfigWidgets:
+                ikey = qfw.objectName()
                 if 'postProcessing/%s'%ikey in path:
                     key = ikey
                     break
 
             if key == '':
+                self.fs_watcher.addPath(path)
                 return
 
             if 'residuals.dat' in path:
-                canvas = self.findChild(QtGui.QWidget,key).findChild(FigureCanvas)
-                axes = canvas.figure.gca()
-                N = self.lastPos[key]
-
-                data = pylab.loadtxt(path,skiprows=N)
                 
-                with open(path, 'r') as archi:
-                    #archi.seek(1)
-                    archi.readline()
-                    headers = archi.readline()
-                    headers = headers.split('\t')
-                    headers = headers[1:]                    
-                    for i in range(len(headers)):
-                        headers[i].replace(' ','')
-                    archi.close()
-                
-                if len(data)>0:
-                    ini = time.time()
-                    oldPos = self.lastPos[key]
-                    if self.dataPlot[key] == []:
-                        self.dataPlot[key] = data
-                    else:
-                        self.dataPlot[key] = numpy.vstack((self.dataPlot[key],data))
-
-                    if data.ndim==1:
-                        self.lastPos[key] = N + 1
-                    else:
-                        self.lastPos[key] = N + data.shape[0]
-
-                    if(self.dataPlot[key].ndim>1):
-                        self.dataPlot[key] = self.dataPlot[key][-100:,:]
-                        axes.clear()
-                        for i in range(len(headers)):
-                            line = axes.plot(self.dataPlot[key][:,0],self.dataPlot[key][:,i+1],self.colors[i%6], label=headers[i])
-                        miny = numpy.amin(self.dataPlot[key][:,1:])
-                        maxy = miny*1e3
-                        axes.set_ylim(miny,maxy)
-                        axes.set_yscale('log')
-
-                        axes.set_title('Residuals')
-                        axes.set_xlabel('Time [s]')
-                        axes.set_ylabel('|R|')
-                        axes.legend(loc=1, fontsize = 'small')
-
-                        canvas.draw()
-
-                        print 'Plotear %s lleva %f segundos con un tamanio %i'%(path,time.time()-ini,len(self.dataPlot[key][:,0]))
+                frWidget = self.findChild(figureResidualsWidget,key)
+                frWidget.plot(path)
 
         self.fs_watcher.addPath(path)
 
     def directory_changed(self,path):
         self.fs_watcher.removePath(path)
-        print 'en directory changed de %s'%path
+        if not os.path.exists(path):
+            return
         #busco a cual se corresponde
         keys = []
 
         if 'postProcessing' in path:
-            for key in self.dirType.keys():
+            for qfw in self.qfigWidgets:
+                key = qfw.objectName()
                 if 'postProcessing/%s'%key in path:
                     keys.append(key)
                     break
         else:
-            for key in self.dirType.keys():
+            for qfw in self.qfigWidgets:
+                key = qfw.objectName()
                 if 'snapshots/%s'%key in path:
                     keys.append(key)
                     break
@@ -404,16 +353,16 @@ class petroFoam(petroFoamUI):
             self.fs_watcher.addPath(path)
             return
 
-        print keys
 
         for ii in keys:
-            newdirs = list(set(os.listdir(path))-set(self.dirList[ii]))
+            figW = self.findChild(QtGui.QWidget,ii)
+            newdirs = list(set(os.listdir(path))-set(figW.dirList))
             newdirs.sort(key=lambda x: os.stat(os.path.join(path, x)).st_mtime)
-            self.dirList[ii].extend(newdirs)
-            self.lastPos[ii] = len(self.dirList[ii])-1
-
-            if self.lastPos[ii]>0:
-                self.doPlot(self.findChild(QtGui.QWidget,ii))
+            if figW:
+                figW.dirList.extend(newdirs)
+                figW.lastPos = len(figW.dirList)-1
+                if figW.lastPos>0:
+                    figW.plot()
 
         self.fs_watcher.addPath(path)
 
@@ -423,6 +372,7 @@ class petroFoam(petroFoamUI):
         i = 0
         while i<len(self.pending_files):
             filename = '%s/%s'%(self.currentFolder,self.pending_files[i])
+            print 'testng %s'%filename
             if os.path.isfile(filename):
                 print 'Se agrega %s'%filename
                 self.fs_watcher.addPath(filename)
@@ -452,16 +402,24 @@ class petroFoam(petroFoamUI):
         config = {}
         #aca hay que cargar todas las selecciones de combobox,etc
         config['nPlots'] = self.nPlots
-        config['dirList'] = self.dirList
-        config['dirType'] = self.dirType
-        config['dataPlot'] = self.dataPlot
+        
+        #estos 5 deberian volar
         config['typeFile'] = self.typeFile
         config['lastPos'] = self.lastPos
-        
+
         config['namePlots'] = []
+        config['typePlots'] = []
         for i in range(self.nPlots):
             config['namePlots'].append(self.qfigWidgets[i].objectName())
-            
+            if isinstance(self.qfigWidgets[i],figureResidualsWidget):  
+                config['typePlots'].append('Residuals')
+            elif isinstance(self.qfigWidgets[i],figureSampledLineWidget):  
+                config['typePlots'].append('Sampled Line')
+            elif isinstance(self.qfigWidgets[i],figureGeneralSnapshotWidget):  
+                config['typePlots'].append('General Snapshot')
+            else:
+                config['typePlots'].append(' ')
+        
         output = open(filename, 'wb')
         pickle.dump(config, output)
         output.close()
@@ -477,13 +435,9 @@ class petroFoam(petroFoamUI):
             wrongFile = 0            
             wrongFile = 1 if 'nPlots' not in config.keys() else wrongFile
             wrongFile = 1 if 'namePlots' not in config.keys() else wrongFile
-            wrongFile = 1 if 'dirList' not in config.keys() else wrongFile
-            wrongFile = 1 if 'dirType' not in config.keys() else wrongFile
-            wrongFile = 1 if 'dataPlot' not in config.keys() else wrongFile
+            wrongFile = 1 if 'typePlots' not in config.keys() else wrongFile
             wrongFile = 1 if 'typeFile' not in config.keys() else wrongFile
-            
-            print config
-            
+                        
             if wrongFile:
                 QtGui.QMessageBox.about(self, "ERROR", "Corrupted File")
                 return
@@ -498,23 +452,24 @@ class petroFoam(petroFoamUI):
             
             self.nPlots = config['nPlots'] 
             namePlots = config['namePlots']
-            self.dirList = config['dirList']
-            self.dirType = config['dirType']
-            self.dataPlot = config['dataPlot']
+            typePlots = config['typePlots']
             self.typeFile = config['typeFile']
             
             
             for i in range(self.nPlots):
-                if self.dirType[namePlots[i]]=='Residuals':
-                    ww = figureResidualsWidget(self.scrollAreaWidgetContents)
-                elif self.dirType[namePlots[i]]=='Sampled Line':
+                if typePlots[i]=='Residuals':
+                    ww = figureResidualsWidget(self.scrollAreaWidgetContents,namePlots[i])
+                    [bas1,bas2,currtime] = currentFields(self.currentFolder)
+                    filename = 'postProcessing/%s/%s/residuals.dat'%(namePlots[i],currtime)
+                    self.pending_files.append(filename)                    
+                elif typePlots[i]=='Sampled Line':
                     ww = figureSampledLineWidget(self.scrollAreaWidgetContents,namePlots[i])      
                     dirname = 'postProcessing/%s'%namePlots[i]
-                    #Solo agregar si se eligio autorefreshing                    
-                    self.pending_dirs.append(dirname)
-                    
-                elif self.dirType[namePlots[i]]=='General Snapshot':
+                    #Solo agregar si se eligio autorefreshing             
+                    self.pending_dirs.append(dirname)                    
+                elif typePlots[i]=='General Snapshot':
                     ww = figureGeneralSnapshotWidget(self.scrollAreaWidgetContents)
+                ww.setObjectName(namePlots[i])
                 self.qfigWidgets.insert(i,ww)
                 self.qfigWidgets[i].setObjectName(namePlots[i])
                 self.qscrollLayout.addWidget(self.qfigWidgets[i],i/2,i%2)
@@ -541,75 +496,57 @@ class petroFoam(petroFoamUI):
 
     def temporalFigure_update(self,figW,action):
         print 'hacer %s en %s'%(action,figW.objectName())
-        if self.lastPos[figW.objectName()]==-1 and action != 'refresh':
+        if figW.lastPos==-1 and action != 'refresh':
             return
         if action == 'first':
-            self.lastPos[figW.objectName()] = 0
-            self.doPlot(figW)
+            figW.lastPos = 0
+            figW.plot()
         elif action == 'previous':
-            if self.lastPos[figW.objectName()]>0:
-                self.lastPos[figW.objectName()] = self.lastPos[figW.objectName()]-1
-                self.doPlot(figW)
+            if figW.lastPos>0:
+                figW.lastPos = figW.lastPos - 1
+                figW.plot()
         elif action == 'next':
-            if self.lastPos[figW.objectName()]<len(self.dirList[figW.objectName()])-1:
-                self.lastPos[figW.objectName()] = self.lastPos[figW.objectName()]+1
-                self.doPlot(figW)
+            if figW.lastPos<len(figW.dirList)-1:
+                figW.lastPos = figW.lastPos + 1
+                figW.plot()
         elif action == 'last':
-            self.lastPos[figW.objectName()] = len(self.dirList[figW.objectName()])-1
-            self.doPlot(figW)
+            figW.lastPos = len(figW.dirList) - 1
+            figW.plot()
         elif action == 'play':
-            self.lastPos[figW.objectName()] = 0
+            figW.lastPos = 0
             button = figW.findChild(temporalNavigationToolbar)._actions['play']
-            while self.lastPos[figW.objectName()]<=len(self.dirList[figW.objectName()])-1 and button.isChecked():
-                self.doPlot(figW)
-                self.lastPos[figW.objectName()] = self.lastPos[figW.objectName()]+1
+            while figW.lastPos<=len(figW.dirList)-1 and button.isChecked():
+                figW.plot()
+                figW.lastPos = figW.lastPos + 1
                 QtGui.QApplication.processEvents()
-                if self.dirType[figW.objectName()]=='General Snapshot':
+                if isinstance(figW,figureGeneralSnapshotWidget):
                     time.sleep(0.1)
 
-            if self.lastPos[figW.objectName()]==len(self.dirList[figW.objectName()]):
-                self.lastPos[figW.objectName()] = self.lastPos[figW.objectName()] - 1
+            if figW.lastPos==len(figW.dirList):
+                figW.lastPos = figW.lastPos - 1
                 button.setChecked(False)
         elif action == 'refresh':
             ii = figW.objectName()
-
-            if self.dirType[ii]=='Sampled Line':
+            if isinstance(figW,figureSampledLineWidget):
                 path = '%s/postProcessing/%s'%(self.currentFolder,ii)
-            elif  self.dirType[ii]=='General Snapshot':
+            elif isinstance(figW,figureGeneralSnapshotWidget):
                 path = '%s/snapshots/%s'%(self.currentFolder,ii)
 
-            newdirs = list(set(os.listdir(path))-set(self.dirList[ii]))
+            newdirs = list(set(os.listdir(path))-set(figW.dirList))
             newdirs.sort(key=lambda x: os.stat(os.path.join(path, x)).st_mtime)
-            self.dirList[ii].extend(newdirs)
-            self.lastPos[ii] = len(self.dirList[ii])-1
+            figW.dirList.extend(newdirs)
+            figW.lastPos = len(figW.dirList) - 1
 
-            if self.lastPos[ii]>0:
-                self.doPlot(self.findChild(QtGui.QWidget,ii))
-
-            None
+            if figW.lastPos>0:
+                figW.plot()
 
     def doPlot(self,figW):
         ii = figW.objectName()
         print 'por hace plot de %s type: %s'%(ii,self.dirType[ii])
-
-        if self.dirType[ii]=='Sampled Line':
-            canvas = figW.findChild(FigureCanvas)
-            timeLegend = figW.findChild(QtGui.QLineEdit)
-            axes = canvas.figure.gca()
-
-            filename = '%s/postProcessing/%s/%s/data_U.xy'%(self.currentFolder,ii,self.dirList[ii][self.lastPos[ii]])
-            data = pylab.loadtxt(filename)
-            if len(data)>0:
-
-                axes.clear()
-                line0 = axes.plot(data[:,0],data[:,1],'r', label="Ux")
-                timeLegend.setText(self.dirList[ii][self.lastPos[ii]])
-                axes.set_title(ii)
-                #axes.set_xlabel('Time [s]')
-                #axes.set_ylabel('|R|')
-                axes.legend(loc=2, fontsize = 'small')
-
-                canvas.draw()
+       
+        if isinstance(figW,figureSampledLineWidget):
+                       
+            figW.plot()
 
         if  self.dirType[ii]=='General Snapshot':
             desired = '%s/snapshots/%s/%s/%s.png'%(self.currentFolder,ii,self.dirList[ii][self.lastPos[ii]],ii)
@@ -642,6 +579,8 @@ class petroFoam(petroFoamUI):
             widget = materials(self.currentFolder,int(menu[-1])-1)
         elif menu=='Boundary Conditions':
             widget = bcWidget(self.currentFolder)
+        elif menu=='Initial Conditions':
+            widget = initialConditionsWidget(self.currentFolder)
         else:
             #do nothing
             return           
@@ -663,13 +602,18 @@ class petroFoam(petroFoamUI):
         self.qfigWidgets[self.nPlots].setObjectName(_fromUtf8("newFigureComboBox"))
         self.qfigWidgets[self.nPlots].addItem(_fromUtf8("Select New Figure"))
         self.qfigWidgets[self.nPlots].insertSeparator(1)
-        self.qfigWidgets[self.nPlots].addItems(_fromUtf8(self.typeFigure))
+        self.qfigWidgets[self.nPlots].addItems(self.typeFigure)
         self.qscrollLayout.addWidget(self.qfigWidgets[self.nPlots],self.nPlots/2,self.nPlots%2)
         
-if __name__ == '__main__':
 
+def main():
+    
     import sys
     app = QtGui.QApplication(sys.argv)
     window = petroFoam()
     window.show()
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()

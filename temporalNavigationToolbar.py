@@ -59,6 +59,7 @@ class temporalNavigationToolbar( NavigationToolbar2QTAgg ):
         self.addWidget(self.display)
 
     def first(self):
+        print 'lastPos: %s'%self.canvas.parent().lastPos
         self.window().temporalFigure_update(self.canvas.parent(),'first')
 
     def previous(self):

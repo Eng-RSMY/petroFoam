@@ -164,6 +164,18 @@ class materialsABM(materialsABMUI):
                 
         return
         
+    def changeEdit(self):
+        ready = True
+        edits = self.findChildren(QtGui.QLineEdit)
+        for E in edits:
+            if E.isEnabled():
+                if not E.text():
+                    ready = False
+        if ready:
+            self.button_save.setEnabled(True)
+        else:
+            self.button_save.setEnabled(False)
+        
         
     def addMaterial(self):
         name = self.name.text()

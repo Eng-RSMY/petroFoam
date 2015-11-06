@@ -6,6 +6,18 @@ Created on Wed Aug 19 17:08:36 2015
 """
 
 from PyQt4 import QtGui, QtCore
+import os
+
+types = {}
+types['p'] = 'scalar'
+types['U'] = 'vector'
+types['p_rgh'] = 'scalar'
+types['k'] = 'scalar'
+types['epsilon'] = 'scalar'
+types['omega'] = 'scalar'
+types['alpha'] = 'scalar'
+types['nut'] = 'scalar'
+types['nuTilda'] = 'scalar'
 
 def drange(start, stop, step):
     r = start
@@ -150,3 +162,24 @@ def command_window(palette):
     brush.setStyle(QtCore.Qt.SolidPattern)
     palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.ToolTipText, brush)
     
+def currentFields(currentFolder):
+    #veo los campos que tengo en el directorio inicial
+        timedir = 0
+        currtime = 0
+        logname = '%s/dirFeatures.log' % currentFolder
+        command = 'dirFeaturesFoam -case %s > %s' % (currentFolder,logname)
+        os.system(command)
+        log = open(logname, 'r')
+        for linea in log:
+            if "Current Time" in linea:
+                currtime = linea.split('=')[1].strip()
+                timedir = '%s/%s'%(currentFolder,currtime)
+                
+        #Levanto todos los campos que tengo en el directorio, suponiendo que el solution modeling hizo correctamente su trabajo
+        command = 'rm %s/*~ %s/*.old'%(timedir,timedir)
+        os.system(command)
+        while not os.path.isfile(logname):
+            continue
+        print timedir
+        fields = [ f for f in os.listdir(timedir) if f not in ['T0', 'T1', 'T2', 'T3', 'T4', 'nonOrth', 'skew'] ]
+        return [timedir,fields,currtime]

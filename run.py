@@ -9,8 +9,9 @@ from PyQt4 import QtGui, QtCore
 from run_ui import Ui_runUI
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 import os
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from reset import *
+from time import localtime, strftime, struct_time
+from logTab import *
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -33,20 +34,37 @@ class runUI(QtGui.QScrollArea, Ui_runUI):
         
 class runWidget(runUI):
     
-    def __init__(self):
+    def __init__(self, currentFolder):
         runUI.__init__(self)
         self.solvername = 'icoFoam'
+        self.currentFolder = currentFolder
 
     def setCurrentFolder(self, currentFolder):
         self.currentFolder = currentFolder
         
     def runCase(self):
-        filename = '%s/run.log'%self.currentFolder
-        command = 'touch %s'%filename
+        #modifico el control dict porque pude haber parado la simulacion        
+        filename = '%s/system/controlDict'%self.currentFolder
+        parsedData = ParsedParameterFile(filename,createZipped=False)
+        parsedData['stopAt'] = 'endTime'
+        parsedData.writeFile()
+        
+        #retraso un minuto la edicion del control dict
+        tt = list(localtime())
+        tt[4] = tt[4]-1
+        command = 'touch -d "%s" %s'%(strftime("%Y-%m-%d %H:%M:%S", struct_time(tuple(tt))),filename)
         os.system(command)
-        self.window().newLogTab('Run','%s/run.log'%self.currentFolder)
+        
+        filename = '%s/run.log'%self.currentFolder
+        self.window().newLogTab('Run',filename)
         command = '%s -case %s > %s &'%(self.solvername,self.currentFolder,filename)
         os.system(command)
+        
+        self.pushButton_run.setEnabled(False)
+        self.pushButton_reset.setEnabled(False)
+        self.window().findChild(logTab,'%s/run.log'%self.currentFolder).findChild(QtGui.QPushButton,'pushButton_3').setEnabled(True)
+        
+        
         
     def changeType(self):
         if self.type_serial.isChecked():
@@ -59,7 +77,17 @@ class runWidget(runUI):
             self.pushButton_decompose.setEnabled(True)
 
     def resetCase(self):
-        return
+        w = reset()
+        result = w.exec_()
+        if result:
+            command = 'pyFoamClearCase.py %s %s'%(w.getParams(), self.currentFolder)
+            os.system(command)
+            if w.deleteSnapshots():
+                command = 'rm -r %s/snapshots'%self.currentFolder                
+                os.system(command)
+            if w.resetFigures():
+                self.window().resetFigures(w.deletePostpro(),w.deleteSnapshots())
+                
 
     def decomposeCase(self):
         return
