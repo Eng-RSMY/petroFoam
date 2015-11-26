@@ -8,6 +8,8 @@ Created on Tue Aug 25 13:08:19 2015
 from PyQt4 import QtGui, QtCore
 from bc_ui import Ui_bcUI
 import os
+from bcPatch import *
+from utils import *
 
 from PyFoam.RunDictionary.BoundaryDict import BoundaryDict
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
@@ -46,7 +48,7 @@ prototypes['symmetry'] = ['Symmetry']
 types = {}
 types['wall'] = {}
 types['wall']['U'] = ['fixedValue', 'zeroGradient', 'slip']
-types['wall']['p'] = ['fixedValue', 'zeroGradient', 'fixedFluxPressure', 'fixedValue', 'uniformFixedValue']
+types['wall']['p'] = ['fixedValue', 'zeroGradient', 'fixedFluxPressure', 'uniformFixedValue']
 types['wall']['p_rgh'] = ['fixedValue', 'zeroGradient', 'fixedFluxPressure', 'uniformFixedValue']
 types['wall']['alpha'] = ['fixedValue', 'zeroGradient', 'uniformFixedValue', 'fixedGradient']
 types['wall']['k'] = []
@@ -88,16 +90,102 @@ types['wedge']['omega'] = ['wedge']
 types['wedge']['nut'] = ['wedge']
 types['wedge']['nuTilda'] = ['wedge']
 
+types['cyclic'] = {}
+types['cyclic']['U'] = ['cyclic']
+types['cyclic']['p'] = ['cyclic']
+types['cyclic']['p_rgh'] = ['cyclic']
+types['cyclic']['alpha'] = ['cyclic']
+types['cyclic']['k'] = ['cyclic']
+types['cyclic']['epsilon'] = ['cyclic']
+types['cyclic']['omega'] = ['cyclic']
+types['cyclic']['nut'] = ['cyclic']
+types['cyclic']['nuTilda'] = ['cyclic']
+
+types['cyclicAMI'] = {}
+types['cyclicAMI']['U'] = ['cyclicAMI']
+types['cyclicAMI']['p'] = ['cyclicAMI']
+types['cyclicAMI']['p_rgh'] = ['cyclicAMI']
+types['cyclicAMI']['alpha'] = ['cyclicAMI']
+types['cyclicAMI']['k'] = ['cyclicAMI']
+types['cyclicAMI']['epsilon'] = ['cyclicAMI']
+types['cyclicAMI']['omega'] = ['cyclicAMI']
+types['cyclicAMI']['nut'] = ['cyclicAMI']
+types['cyclicAMI']['nuTilda'] = ['cyclicAMI']
+
 types['patch'] = {}
-types['patch']['U'] = ['fixedValue', 'zeroGradient', 'slip', 'flowRateInletVelocity', 'uniformFixedValue']
+types['patch']['U'] = ['fixedValue', 'zeroGradient', 'slip', 'flowRateInletVelocity', 'uniformFixedValue','inletOutlet']
 types['patch']['p'] = ['fixedValue', 'zeroGradient', 'totalPressure']
 types['patch']['p_rgh'] = ['fixedValue', 'zeroGradient', 'totalPressure']
-types['patch']['alpha'] = ['fixedValue', 'zeroGradient', 'inletOutlet', 'fixedGradient']
+types['patch']['alpha'] = ['fixedValue', 'zeroGradient', 'inletOutlet']
 types['patch']['k'] = []
 types['patch']['epsilon'] = []
 types['patch']['omega'] = []
 types['patch']['nut'] = []
 types['patch']['nuTilda'] = []
+
+extras = {}
+extras['U'] = {}
+extras['U']['fixedValue'] = ['value','[m/s]',['uniform'],3]
+extras['U']['zeroGradient'] = []
+extras['U']['slip'] = []
+#extras['U']['flowRateInletVelocity'] = ['volumetricFlowRate','[m3/s]',['constant','table'],1]
+extras['U']['flowRateInletVelocity'] = ['volumetricFlowRate','[m3/s]',['constant'],1]
+#extras['U']['uniformFixedValue'] = ['uniformValue','[m/s]',['constant','table'],3]
+extras['U']['uniformFixedValue'] = ['uniformValue','[m/s]',['constant'],3]
+extras['U']['inletOutlet'] = ['value','[m/s]',['uniform'],3,'inletValue','[m/s]',['uniform'],3]
+extras['U']['wedge'] = []
+extras['U']['empty'] = []
+extras['U']['symmetry'] = []
+
+extras['p'] = {}
+extras['p']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
+extras['p']['zeroGradient'] = []
+extras['p']['totalPressure'] = ['p0','[m2/s2]',['uniform'],1]
+#extras['p']['uniformFixedValue'] = ['p0','[m2/s2]',['constant','table'],1]
+extras['p']['uniformFixedValue'] = ['p0','[m2/s2]',['constant'],1]
+extras['p']['fixedFluxPressure'] = []
+extras['p']['wedge'] = []
+extras['p']['empty'] = []
+extras['p']['symmetry'] = []
+
+extras['p_rgh'] = extras['p'].copy()
+#extras['p_rgh']['uniformFixedValue'] = ['p0','[Pa]',['constant','table'],1]
+extras['p_rgh']['uniformFixedValue'] = ['p0','[Pa]',['constant'],1]
+extras['p_rgh']['fixedValue'] = ['value','[Pa]',['uniform'],1]
+
+extras['alpha'] = {}
+extras['alpha']['fixedValue'] = ['value','[-]',['uniform'],1]
+extras['alpha']['zeroGradient'] = []
+extras['alpha']['inletOutlet'] = ['inletValue','[-]',['uniform'],1]
+extras['alpha']['wedge'] = []
+extras['alpha']['empty'] = []
+extras['alpha']['symmetry'] = []
+
+extras['k'] = {}
+extras['k']['wedge'] = []
+extras['k']['empty'] = []
+extras['k']['symmetry'] = []
+
+extras['epsilon'] = {}
+extras['epsilon']['wedge'] = []
+extras['epsilon']['empty'] = []
+extras['epsilon']['symmetry'] = []
+
+extras['omega'] = {}
+extras['omega']['wedge'] = []
+extras['omega']['empty'] = []
+extras['omega']['symmetry'] = []
+
+extras['nuT'] = {}
+extras['nuT']['wedge'] = []
+extras['nuT']['empty'] = []
+extras['nuT']['symmetry'] = []
+
+extras['nuTilda'] = {}
+extras['nuTilda']['wedge'] = []
+extras['nuTilda']['empty'] = []
+extras['nuTilda']['symmetry'] = []
+
 
 class bcWidget(bcUI):
 
@@ -122,57 +210,204 @@ class bcWidget(bcUI):
         self.icones['symmetry'].addPixmap(QtGui.QPixmap(_fromUtf8("images/fromHelyx/symmetry16.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
 
         
-        self.boundaries = BoundaryDict(self.currentFolder)
+        self.boundaries = BoundaryDict(str(self.currentFolder))
         
         #veo los campos que tengo en el directorio inicial
-        self.timedir = 0
-        logname = '%s/dirFeatures.log' % self.currentFolder
-        command = 'dirFeaturesFoam -case %s > %s' % (self.currentFolder,logname)
-        os.system(command)
-        log = open(logname, 'r')
-        for linea in log:
-            if "Current Time" in linea:
-                currtime = linea.split('=')[1].strip()
-                self.timedir = '%s/%s'%(self.currentFolder,currtime)
+        [self.timedir,self.fields,currtime] = currentFields(self.currentFolder)
                 
-        #Levanto todos los campos que tengo en el directorio, suponiendo que el solution modeling hizo correctamente su trabajo
-        command = 'rm %s/*~ %s/*.old'%(self.timedir,self.timedir)
-        os.system(command)
-        self.fields = [ f for f in os.listdir(self.timedir) if f not in ['T0', 'T1', 'T2', 'T3', 'T4', 'nonOrth', 'skew'] ]
-                
+        self.loadData()
+
+
+    def loadData(self):
+        self.listWidget.clear()
         for ipatch in self.boundaries.patches():
             Item = QtGui.QListWidgetItem()
             Item.setIcon(self.icones[self.boundaries[ipatch]['type']])
             Item.setText(_translate("bcWidget", ipatch, None))
             self.listWidget.addItem(Item)
-            
-        for ifield in self.fields:
-            self.tabWidget.addTab(QtGui.QWidget(), ifield)
-            self.tabWidget.setTabText(self.tabWidget.count(),ifield)
-            
+        
+        self.pushButton.setEnabled(False)
+        self.addTabs()
+
     def changeSelection(self):
         ipatch = self.listWidget.currentItem().text()
         self.comboBox.clear()
         self.comboBox.addItems(prototypes[self.boundaries[ipatch]['type']])
-        
-        ii = 0
-        for ifield in self.fields:
-            filename = '%s/%s'%(self.timedir,ifield)
-            parsedData = ParsedParameterFile(filename,createZipped=False)
-            thisPatch = parsedData['boundaryField'][ipatch]
-            
-            #debo poner un combobox con las opciones por field, ademas agregar debajo entrada para valores segun corresponda
-            newComboBox = QtGui.QComboBox()
-            newComboBox.addItems(types[self.boundaries[ipatch]['type']][ifield])
-            #self.tabWidget.widget(ii).addWidget(newComboBox)
-            print types[self.boundaries[ipatch]['type']][ifield]
-                     
-            ii = ii+1
-            
+        self.addTabs(ipatch)
         return
+        
+    def addTabs(self,ipatch=None):
+        for itab in range(self.tabWidget.count()):
+            layout = self.tabWidget.widget(itab).findChildren(QtGui.QVBoxLayout)[0]
+            self.clearLayout(layout,0)
+        self.tabWidget.clear()
+        for ifield in self.fields:
+            widget = QtGui.QWidget()
+            layout = QtGui.QVBoxLayout(widget)
+            if ipatch:
+                filename = '%s/%s'%(self.timedir,ifield)
+                parsedData = ParsedParameterFile(filename,createZipped=False)
+                thisPatch = parsedData['boundaryField'][ipatch]
+                
+                newComboBox = QtGui.QComboBox()
+                newComboBox.addItems(types[self.boundaries[ipatch]['type']][ifield])
+                #aca hay que llamar a este evento solo si se cambia                
+                index = newComboBox.findText(thisPatch['type'])
+                newComboBox.setCurrentIndex(index) if index!=-1 else None                    
+                layout.addWidget(newComboBox)
+                extraInfo = extras[ifield][thisPatch['type']]
+                self.addExtraInfo(layout,extraInfo)
+                QtCore.QObject.connect(newComboBox, QtCore.SIGNAL(_fromUtf8("currentIndexChanged(int)")), self.onChangeComboType)
+                
+                #cargo los datos desde el diccionario
+                L = range(layout.count())
+                L = L[1:-1]
+                iExtra = 0
+                for l in L:
+                    layout2 = layout.itemAt(l).layout()
+                    if layout2:
+                        if layout2.itemAt(1).widget().currentText() != 'table':
+                            data = str(parsedData['boundaryField'][ipatch][extraInfo[iExtra*4]])
+                            data = data.replace('(','').replace(')','').split()
+                            if layout2.count()==3:
+                                layout2.itemAt(1).widget().setCurrentIndex(layout2.itemAt(1).widget().findText(data[0]))
+                                layout2.itemAt(2).widget().setText(data[1])
+                            else:
+                                layout2.itemAt(1).widget().setCurrentIndex(layout2.itemAt(1).widget().findText(data[0]))
+                                layout2.itemAt(2).widget().setText(data[1])
+                                layout2.itemAt(3).widget().setText(data[2])
+                                layout2.itemAt(4).widget().setText(data[3])                             
+                        else:
+                            None
+                            #determinar que hacer si quiero cargar una table!!!     
+                            #('table', [[0, 0.0], [1e6-0.01, 0.0], [1e6, 1.0], [1e6, 1.0]])
+                            #tabla = self.getTabla(itab)
+                            #parsedData['boundaryField'][ipatch][extraInfo[iExtra*4]] = ('table',tabla)
+                        iExtra = iExtra+1
+            
+            spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+            layout.addItem(spacerItem)
+        
+            self.tabWidget.addTab(widget, ifield)
+            self.tabWidget.setTabText(self.tabWidget.count(),ifield)
+
+    def onChangeComboType(self):
+        ii = self.tabWidget.currentIndex()
+        ifield = self.tabWidget.tabText(ii)
+        widget = self.tabWidget.currentWidget()
+        if widget:
+            itype = widget.findChildren(QtGui.QComboBox)[0].currentText()
+            layout = widget.findChildren(QtGui.QVBoxLayout)[0]
+            self.clearLayout(layout, 1)
+            self.addExtraInfo(layout,extras[ifield][itype])
+        self.checkData()
+            
+            
+    def onEditValue(self):
+        return
+              
+              
+    def clearLayout(self, layout, dejar):
+        for i in reversed(range(layout.count())):
+            if i>= dejar:
+                item = layout.itemAt(i)
+        
+                if isinstance(item, QtGui.QWidgetItem):
+                    item.widget().close()
+                    item.widget().deleteLater()
+                    # or
+                    # item.widget().setParent(None)
+                elif isinstance(item, QtGui.QSpacerItem):
+                    None
+                    # no need to do extra stuff
+                else:
+                    self.clearLayout(item.layout(),0)
+        
+                # remove the item from layout
+                layout.removeItem(item)
+
+    def addExtraInfo(self,layout,extraInfo):
+        if extraInfo != []:
+            for i in range(len(extraInfo)/4):
+                layout2 = QtGui.QHBoxLayout()
+                label = QtGui.QLabel()
+                label.setText('%s %s'%(extraInfo[i*4],extraInfo[i*4+1]))
+                layout2.addWidget(label)
+                
+                if extraInfo[i*4+2]:
+                    cb = QtGui.QComboBox()
+                    cb.addItems(extraInfo[i*4+2])
+                    layout2.addWidget(cb)
+                    
+                for j in range(extraInfo[i*4+3]):
+                    ledit = QtGui.QLineEdit()
+                    ledit.setValidator(QtGui.QDoubleValidator())
+                    layout2.addWidget(ledit)
+                    QtCore.QObject.connect(ledit, QtCore.SIGNAL(_fromUtf8("textEdited(QString)")), self.checkData)
+                layout.addLayout(layout2)
+        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        layout.addItem(spacerItem)
         
     def changePrototype(self):
         return
         
     def saveBCs(self):
+        
+        ipatch = self.listWidget.currentItem().text()
+        for itab in range(self.tabWidget.count()):
+            ifield = self.tabWidget.tabText(itab)
+            itype = self.tabWidget.widget(itab).findChildren(QtGui.QComboBox)[0].currentText()
+            layout = self.tabWidget.widget(itab).findChildren(QtGui.QVBoxLayout)[0]
+            filename = '%s/%s'%(self.timedir,ifield)
+            parsedData = ParsedParameterFile(filename,createZipped=False)
+            parsedData['boundaryField'][ipatch] = {}
+            parsedData['boundaryField'][ipatch]['type'] = itype
+            #debo tomar los valores extras, si los tiene
+            extraInfo = extras[ifield][itype]
+            L = range(layout.count())
+            L = L[1:-1]
+            iExtra = 0
+            for l in L:
+                layout2 = layout.itemAt(l).layout()
+                if layout2:
+                    if layout2.itemAt(1).widget().currentText() != 'table':
+                        if layout2.count()==3:
+                             parsedData['boundaryField'][ipatch][extraInfo[iExtra*4]] = '%s %s' %(layout2.itemAt(1).widget().currentText(),layout2.itemAt(2).widget().text())
+                        else:
+                             parsedData['boundaryField'][ipatch][extraInfo[iExtra*4]] = '%s (%s %s %s)' %(layout2.itemAt(1).widget().currentText(),layout2.itemAt(2).widget().text(),layout2.itemAt(3).widget().text(),layout2.itemAt(4).widget().text())
+                    else:
+                        #determinar que hacer si quiero cargar una table!!!     
+                        #('table', [[0, 0.0], [1e6-0.01, 0.0], [1e6, 1.0], [1e6, 1.0]])
+                        tabla = self.getTabla(itab)
+                        parsedData['boundaryField'][ipatch][extraInfo[iExtra*4]] = ('table',tabla)
+                    iExtra = iExtra+1
+            parsedData.writeFile()
+        self.pushButton.setEnabled(False)
         return
+        
+        
+    def getTable(self,itab):
+        table = [[0, 0],[1, 0]]
+        return table
+        
+    def checkData(self):
+        ready = True
+        for itab in range(self.tabWidget.count()):
+            edits = self.tabWidget.widget(itab).findChildren(QtGui.QLineEdit)
+            for E in edits:
+                if E.isEnabled():
+                    if not E.text():
+                        ready = False
+        if ready:
+            self.pushButton.setEnabled(True)
+        else:
+            self.pushButton.setEnabled(False)
+            
+            
+    def changePatchType(self,item):
+        w = bcPatch(self.boundaries[item.text()]['type'])  
+        result = w.exec_()
+        if result:
+            self.boundaries[item.text()]['type'] = w.getPatchType()
+            self.boundaries.writeFile()
+            self.loadData()

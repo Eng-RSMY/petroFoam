@@ -54,104 +54,107 @@
             <attribute name="title">
              <string>Case Setup</string>
             </attribute>
-            <layout class="QGridLayout" name="gridLayout_3">
+            <layout class="QGridLayout" name="gridLayout">
              <item row="0" column="0">
-              <widget class="QTreeWidget" name="treeWidget">
-               <property name="maximumSize">
-                <size>
-                 <width>200</width>
-                 <height>16777215</height>
-                </size>
+              <widget class="QSplitter" name="splitter_3">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
                </property>
-               <column>
-                <property name="text">
-                 <string>Case Setup</string>
+               <widget class="QTreeWidget" name="treeWidget">
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>16777215</height>
+                 </size>
                 </property>
-               </column>
-               <item>
-                <property name="text">
-                 <string>Solution Modeling</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</iconset>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Run Time Controls</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/cog16.png</normaloff>:/newPrefix/images/fromHelyx/cog16.png</iconset>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Boundary Conditions</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</iconset>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Initial Conditions</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</iconset>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Materials</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</iconset>
-                </property>
+                <column>
+                 <property name="text">
+                  <string>Case Setup</string>
+                 </property>
+                </column>
                 <item>
                  <property name="text">
-                  <string>phase 1</string>
+                  <string>Solution Modeling</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</normaloff>:/newPrefix/images/fromHelyx/freeSurface16.png</iconset>
                  </property>
                 </item>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Numerical Schemes</string>
+                <item>
+                 <property name="text">
+                  <string>Run Time Controls</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/cog16.png</normaloff>:/newPrefix/images/fromHelyx/cog16.png</iconset>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Boundary Conditions</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</normaloff>:/newPrefix/images/fromHelyx/externalMesh16.png</iconset>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Initial Conditions</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</normaloff>:/newPrefix/images/fromHelyx/exportResults16.png</iconset>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Materials</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</normaloff>:/newPrefix/images/fromHelyx/gridgen16.png</iconset>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>phase 1</string>
+                  </property>
+                 </item>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Numerical Schemes</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/calculator16.png</normaloff>:/newPrefix/images/fromHelyx/calculator16.png</iconset>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Solver Settings</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="resources.qrc">
+                   <normaloff>:/newPrefix/images/fromHelyx/parMap16.png</normaloff>:/newPrefix/images/fromHelyx/parMap16.png</iconset>
+                 </property>
+                </item>
+               </widget>
+               <widget class="QScrollArea" name="scrollArea_case_setup">
+                <property name="widgetResizable">
+                 <bool>true</bool>
                 </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/calculator16.png</normaloff>:/newPrefix/images/fromHelyx/calculator16.png</iconset>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>Solver Settings</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="resources.qrc">
-                  <normaloff>:/newPrefix/images/fromHelyx/parMap16.png</normaloff>:/newPrefix/images/fromHelyx/parMap16.png</iconset>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QScrollArea" name="scrollArea_case_setup">
-               <property name="widgetResizable">
-                <bool>true</bool>
-               </property>
-               <widget class="QWidget" name="scrollAreaWidgetContents_2">
-                <property name="geometry">
-                 <rect>
-                  <x>0</x>
-                  <y>0</y>
-                  <width>359</width>
-                  <height>387</height>
-                 </rect>
-                </property>
+                <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>359</width>
+                   <height>387</height>
+                  </rect>
+                 </property>
+                </widget>
                </widget>
               </widget>
              </item>

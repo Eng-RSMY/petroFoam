@@ -8,6 +8,8 @@ Created on Tue Aug 25 13:08:19 2015
 from PyQt4 import QtGui, QtCore
 from tracers_ui import tracersUI
 import os
+import utils
+import copy
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -26,227 +28,148 @@ except AttributeError:
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 
 
+dicc = {}
+dicc['type'] = 'scalarTransport';
+dicc['functionObjectLibs'] = ("libutilityFunctionObjects.so")
+dicc['DT'] = '1e-10'
+dicc['resetOnStartUp'] = 'false';
+dicc['autoSchemes'] = 'true';
+dicc['patchName'] = 'inlet'
+dicc['fvOptions'] = {}
+dicc['fvOptions']['S'] = {}
+dicc['fvOptions']['S']['type'] = 'scalarExplicitSetValue'
+dicc['fvOptions']['S']['active'] = 'true'
+dicc['fvOptions']['S']['selectionMode'] = 'cellSet'
+dicc['fvOptions']['S']['cellSet'] = 'inletcells'
+dicc['fvOptions']['S']['timeStart'] = '0'
+dicc['fvOptions']['S']['duration'] = '1e6'
+dicc['fvOptions']['S']['scalarExplicitSetValueCoeffs'] = {}
+dicc['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate'] = {}
+dicc['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate']['T0'] = 1
+
 class tracers(tracersUI):
 
-    def __init__(self, currentFolder, parallel=False):
+    def __init__(self, currentFolder):
         tracersUI.__init__(self)
         self.currentFolder = currentFolder
-        self.tracersData = [{},{},{},{},{}]
+        [self.timedir,fields,self.currtime] = utils.currentFields(str(self.currentFolder))
+        
+        self.tracersData = []
         self.patches = []
         self.emptys = []
-        
+                
         self.loadCaseData()
         self.refreshTable()
 
     def loadCaseData(self):
-        logname = '%s/dirFeatures.log' % self.currentFolder
-        command = 'dirFeaturesFoam -case %s > %s' % (self.currentFolder,logname)
-        os.system(command)
-        log = open(logname, 'r')
-        for linea in log:
-            if "Current Time" in linea:
-                currtime = linea.split('=')[1].strip()
-        #FIXME PARALLEL
-        self.timedir = '%s/%s'%(self.currentFolder,currtime)
-        noexists = []
-        for i in range(0,5):
-            filename = '%s/T%s'%(self.timedir,str(i))
-            if not os.path.exists(filename):
-                noexists.append(filename)                
-            else:
-                parsedData = ParsedParameterFile(filename,createZipped=False)
-                self.patches = parsedData['boundaryField'].keys()
-                for ipatch in parsedData['boundaryField'].keys():
-                    if parsedData['boundaryField'][ipatch]['type']=='uniformFixedValue':
-                        self.tracersData[i]['patchName'] = ipatch
-                        self.tracersData[i]['startTime'] = parsedData['boundaryField'][ipatch]['uniformValue'][1][2][0]
-                    elif parsedData['boundaryField'][ipatch]['type']=='empty':
-                        self.emptys.append(ipatch)
+        filename = '%s/system/controlDict'%self.currentFolder
+        self.parsedData = ParsedParameterFile(filename,createZipped=False)
+        
+        if 'functions' in self.parsedData.getValueDict().keys():
+            for key in self.parsedData['functions'].keys():
+                print 'Analyzing %s' % key
+                if self.parsedData['functions'][key]['type'] == 'scalarTransport':
+                    tracer = {}
+                    tracer['name'] = key
+                    tracer['patchName'] = self.parsedData['functions'][key]['patchName']
+                    tracer['startTime'] = self.parsedData['functions'][key]['fvOptions']['S']['timeStart']
+                    self.tracersData.append(tracer)
                         
         if self.patches==[]:
-            filename = '%s/U'%(self.timedir,str(i))
-            parsedData = ParsedParameterFile(filename,createZipped=False)
-            self.patches = parsedData['boundaryField'].keys()
+            filename = '%s/U'%(self.timedir)
+            print filename
+            UData = ParsedParameterFile(filename,createZipped=False)
+            self.patches = UData['boundaryField'].keys()
             for ipatch in self.patches:
-                if parsedData['boundaryField'][ipatch]['type']=='empty':
+                if UData['boundaryField'][ipatch]['type']=='empty':
                     self.emptys.append(ipatch)
         
-        if len(noexists):
-            w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "There not exists tracer fields, do you wat to create them?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-            ret = w.exec_()
-            if(QtGui.QMessageBox.Yes == ret):
-                for ii in noexists:   
-                    self.createTracersFields(ii)
-            else:
-                self.close()
-      
+
     def refreshTable(self):
-        for i in range(0,5):
+        for ii in range(self.tableWidget.rowCount()-1,-1,-1):
+            self.tableWidget.removeRow(ii)
+        
+        for i in range(len(self.tracersData)):
+            self.tableWidget.insertRow(i)
             item1 = QtGui.QTableWidgetItem()
             item2 = QtGui.QTableWidgetItem()
             wdg1 = QtGui.QLineEdit()
             wdg2 = QtGui.QComboBox()
-            wdg2.addItems(self.patches)
+            wdg2.addItems(list(set(self.patches)-set(self.emptys)))
             
-            if len(self.tracersData[i]):
-                wdg1.setText(str(self.tracersData[i]['startTime']))
-                wdg2.setCurrentIndex(wdg2.findText(self.tracersData[i]['patchName']))
-            else:
-                wdg1.setText(str(1e6))
-                wdg2.setCurrentIndex(wdg2.findText('inlet'))
+            wdg1.setText(str(self.tracersData[i]['startTime']))
+            wdg2.setCurrentIndex(wdg2.findText(self.tracersData[i]['patchName']))
                 
             self.tableWidget.setItem(i,0,item1)
             self.tableWidget.setCellWidget(i,0,wdg1) 
             self.tableWidget.setItem(i,1,item2)
             self.tableWidget.setCellWidget(i,1,wdg2)
 
+
+    def newTracer(self):
+        i = self.tableWidget.rowCount()
+        self.tableWidget.insertRow(i)
+        item1 = QtGui.QTableWidgetItem()
+        item2 = QtGui.QTableWidgetItem()
+        wdg1 = QtGui.QLineEdit()
+        wdg2 = QtGui.QComboBox()
+        wdg2.addItems(list(set(self.patches)-set(self.emptys)))
+        wdg1.setText('0')
+        self.tableWidget.setItem(i,0,item1)
+        self.tableWidget.setCellWidget(i,0,wdg1) 
+        self.tableWidget.setItem(i,1,item2)
+        self.tableWidget.setCellWidget(i,1,wdg2)
+                
+
+    def removeTracer(self):
+        ii = self.tableWidget.currentRow()
+        self.tableWidget.removeRow(ii)
+        return
+        
     def saveCaseData(self):
-        zg = {}
-        zg['type'] = 'zeroGradient'
 
-        for i in range(0,5):
-            filename = '%s/T%s'%(self.timedir,str(i))
-            parsedData = ParsedParameterFile(filename,createZipped=False)
-
-            startTime = self.tableWidget.cellWidget(i,0).text()
-            patchname = self.tableWidget.cellWidget(i,1).currentText()
+        for dd in self.tracersData:
+            print 'Eliminando %s'%dd['name']
+            del self.parsedData['functions'][dd['name']]
+        
+        if 'functions' not in self.parsedData.getValueDict().keys():
+            self.parsedData['functions'] = {}
             
-            oldcb = parsedData['boundaryField'][patchname].copy()
-            if oldcb['type']=='uniformFixedValue':
-                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
-                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
-            else:
-                #reemplazo el patch viejo 
-                for ipatch in parsedData['boundaryField']:
-                    if parsedData['boundaryField'][ipatch]['type'] == 'uniformFixedValue':
-                        parsedData['boundaryField'][ipatch] = zg.copy()
-                parsedData['boundaryField'][patchname] = oldcb
-                parsedData['boundaryField'][patchname]['type'] = 'uniformFixedValue'
-                parsedData['boundaryField'][patchname]['uniformValue'] = ('table', [[0, 0.0], [1e6-0.01, 0.0], [1e6, 1.0], [1e6, 1.0]])
-                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
-                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
-            parsedData.writeFile()
-        return 
+        for i in range(self.tableWidget.rowCount()):
+            newkey = 'T%s'%str(i)
+            tracer = copy.deepcopy(dicc)
+            tracer['fvOptions']['S']['timeStart'] = self.tableWidget.cellWidget(i,0).text()
+            tracer['patchName'] = self.tableWidget.cellWidget(i,1).currentText()
+            del tracer['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate']['T0']
+            tracer['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate'][newkey] = '1'            
+            self.parsedData['functions'][newkey] = tracer
         
-    def createTracersFields(self,filename):
-        zg = {}
-        zg['type'] = 'zeroGradient'
+        self.parsedData.writeFile()
         
-        em = {}
-        em['type'] = 'empty'
-        
-        filenamesrc = 'templates/tracerTemplate'
-        parsedTemplate = ParsedParameterFile(filenamesrc,createZipped=False)
-
-        for ipatch in self.patches:
-            if ipatch not in self.emptys:
-                parsedTemplate['boundaryField'][ipatch]= zg
-            else:
-                parsedTemplate['boundaryField'][ipatch] = em
-        parsedTemplate.writeFileAs(filename)                
-
-            
-#    def saveUserLibrary(self):
-#        filename = 'caseDicts/materialProperties.incompressible'
-#        parsedData = ParsedParameterFile(filename,createZipped=False)
-#        parsedData['userLibrary'] = self.userLibrary
-#        parsedData.writeFile()
-#        
-#        return
+#        zg = {}
+#        zg['type'] = 'zeroGradient'
 #
-#    def changeSelectionDefault(self):
-#        if not self.list_default.selectedItems():
-#            print 'No hay selected'
-#            return
-#        key = self.list_default.selectedItems()[0].text()
-#        for item in self.list_user.selectedItems():
-#            item.setSelected(False)
-#        
-#        self.updateParameters(self.defaults[key])   
-#        
-#        self.OnOff(False)
-#        return
-#    
-#    def changeSelectionUser(self):
-#        if not self.list_user.selectedItems():
-#            return
-#        key = self.list_user.selectedItems()[0].text()
-#        for item in self.list_default.selectedItems():
-#            item.setSelected(False)
-#        self.updateParameters(self.userLibrary[key])
-#        self.OnOff(True)
-#        return
-#        
-#    def updateParameters(self,data):
-#        for key in emptys.keys():
-#            if key=='name':
-#                self.__getattribute__(key).setText(str(data[key]))
-#            elif key in self.__dict__.keys():
-#                self.__getattribute__(key).setText(str(data[key][-1]))
-#    
-#    def OnOff(self,V):
-#        keys = emptys.keys()
-#        for key in keys:
-#            self.__getattribute__(key).setEnabled(V)
-#        self.button_remove.setEnabled(V)
-#        self.button_save.setEnabled(V)
-#        
-#    def new(self):
-#        self.updateParameters(emptys)
-#        self.OnOff(True)
-#        for item in self.list_default.selectedItems():
-#            item.setSelected(False)
-#        for item in self.list_user.selectedItems():
-#            item.setSelected(False)
-#        self.button_remove.setEnabled(False)
-#        return
-#        
-#    def copy(self):
-#        data = self.getSelectedData()
-#        if data:
-#            self.updateParameters(data)
-#            texto = self.name.text() + "_copy"
-#            self.name.setText(texto)
-#            self.OnOff(True)    
-#        
-#        return
-#        
-#    def getSelectedData(self):
-#        ditem = self.list_default.selectedItems()
-#        data = False
-#        if len(ditem):
-#            data = self.defaults[ditem[0].text()]
-#        else:
-#            uitem = self.list_user.selectedItems()
-#            if len(uitem):
-#                data = dict(self.userLibrary[uitem[0].text()])
-#        return data
-#        
-#    def remove(self):
-#        uitem = self.list_user.selectedItems()
-#        if len(uitem):
-#            w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "Are you sure to remove?", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
-#            ret = w.exec_()
-#            if(QtGui.QMessageBox.Yes == ret):
-#                del self.userLibrary[uitem[0].text()]
-#                self.saveUserLibrary()
-#                self.loadUserLibrary()
-#                print 'ojo que no cambia la seleccion luego de eliminar'                
-#                self.list_default.setFocus()
-#                self.list_default.item(0).setSelected(True)
-#                self.changeSelectionDefault()
-#                
-#        return
-#        
-#        
-#    def addMaterial(self):
-#        name = self.name.text()
-#        self.userLibrary[name] = self.defaults['air'].copy()
-#        keys = emptys.keys()
-#        for key in keys:
-#            if key=='name':
-#                self.userLibrary[name][key] = self.__getattribute__(key).text()
+#        for i in range(0,5):
+#            filename = '%s/T%s'%(self.timedir,str(i))
+#            parsedData = ParsedParameterFile(filename,createZipped=False)
+#
+#            startTime = self.tableWidget.cellWidget(i,0).text()
+#            patchname = self.tableWidget.cellWidget(i,1).currentText()
+#            
+#            oldcb = parsedData['boundaryField'][patchname].copy()
+#            if oldcb['type']=='uniformFixedValue':
+#                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
+#                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
 #            else:
-#                self.userLibrary[name][key][-1] = self.__getattribute__(key).text()
-#        self.saveUserLibrary()
-#        self.loadUserLibrary()  
+#                #reemplazo el patch viejo 
+#                for ipatch in parsedData['boundaryField']:
+#                    if parsedData['boundaryField'][ipatch]['type'] == 'uniformFixedValue':
+#                        parsedData['boundaryField'][ipatch] = zg.copy()
+#                parsedData['boundaryField'][patchname] = oldcb
+#                parsedData['boundaryField'][patchname]['type'] = 'uniformFixedValue'
+#                parsedData['boundaryField'][patchname]['uniformValue'] = ('table', [[0, 0.0], [1e6-0.01, 0.0], [1e6, 1.0], [1e6, 1.0]])
+#                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
+#                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
+#            parsedData.writeFile()
+        
+        return

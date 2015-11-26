@@ -97,7 +97,7 @@
        <item>
         <widget class="QTabWidget" name="tabWidget">
          <property name="currentIndex">
-          <number>0</number>
+          <number>2</number>
          </property>
          <widget class="QWidget" name="tab">
           <attribute name="title">
@@ -147,7 +147,7 @@
              </item>
              <item>
               <property name="text">
-               <string>Turbulent Fields</string>
+               <string>Enstrophy</string>
               </property>
              </item>
              <item>
@@ -202,6 +202,20 @@
            <string>Wall</string>
           </attribute>
           <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="1">
+            <widget class="QComboBox" name="time_2">
+             <item>
+              <property name="text">
+               <string>Latest Time</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Full Range</string>
+              </property>
+             </item>
+            </widget>
+           </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
@@ -244,26 +258,17 @@
             <widget class="QComboBox" name="field_2">
              <item>
               <property name="text">
-               <string>y Plus</string>
+               <string>y Plus RAS</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>Wall Heat Flux</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="time_2">
-             <item>
-              <property name="text">
-               <string>Latest Time</string>
+               <string>y Plus LES</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>Full Range</string>
+               <string>Wall Velocity Gradient</string>
               </property>
              </item>
             </widget>
@@ -326,21 +331,6 @@
              <item>
               <property name="text">
                <string>Integral</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Sumatory</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Maximum</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Minimum</string>
               </property>
              </item>
             </widget>

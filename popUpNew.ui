@@ -16,7 +16,11 @@
    </font>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>petroFoam Launcher</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>images/icone.png</normaloff>images/icone.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -27,7 +31,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Parent Folder</string>
+        <string>Case Location</string>
        </property>
       </widget>
      </item>

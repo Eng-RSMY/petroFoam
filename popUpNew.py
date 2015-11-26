@@ -19,15 +19,16 @@ except AttributeError:
 class popUpNew(popUpNewUI):
 
     def __init__(self):
-        self.parentFolder = './'
+        self.caselocation = './'
         self.casename = 'newCase'
         popUpNewUI.__init__(self)
-        self.lineEdit_parent.setText(self.parentFolder)
+        self.lineEdit_parent.setText(self.caselocation)
         self.lineEdit_case.setText(self.casename)
 
     def chooseFolder(self):
-        self.parentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Parent Folder', self.parentFolder);
-        self.lineEdit_parent.setText(self.parentFolder)
+        self.caselocation = QtGui.QFileDialog.getExistingDirectory(self, 'Case Location', self.caselocation);
+        self.lineEdit_parent.setText(os.path.dirname(self.caselocation))
+        self.lineEdit_case.setText(os.path.basename(self.caselocation))
 
     def getData(self):
         return [self.lineEdit_case.text(), self.lineEdit_parent.text()]
