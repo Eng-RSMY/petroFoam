@@ -1,0 +1,7 @@
+# 1 "files"
+# 1 "<interno>"
+# 1 "<línea-de-orden>"
+# 1 "files"
+meshQuality.C
+
+EXE = $(FOAM_USER_APPBIN)/meshQuality
