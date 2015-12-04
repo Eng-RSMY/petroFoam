@@ -36,4 +36,4 @@ class bcPatch(bcPatchUI):
         self.comboBox.setCurrentIndex(ii)
         
     def getPatchType(self):
-        return self.comboBox.currentText()
+        return str(self.comboBox.currentText())

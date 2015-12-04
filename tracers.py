@@ -10,6 +10,10 @@ from tracers_ui import tracersUI
 import os
 import utils
 import copy
+import numpy
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -30,7 +34,7 @@ from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 
 dicc = {}
 dicc['type'] = 'scalarTransport';
-dicc['functionObjectLibs'] = ("libutilityFunctionObjects.so")
+dicc['functionObjectLibs'] =  ['"libutilityFunctionObjects.so"']
 dicc['DT'] = '1e-10'
 dicc['resetOnStartUp'] = 'false';
 dicc['autoSchemes'] = 'true';
@@ -54,20 +58,21 @@ class tracers(tracersUI):
         self.currentFolder = currentFolder
         [self.timedir,fields,self.currtime] = utils.currentFields(str(self.currentFolder))
         
-        self.tracersData = []
         self.patches = []
         self.emptys = []
+        self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
+        self.firstPlot = True
                 
         self.loadCaseData()
         self.refreshTable()
+        self.refreshTimeline()
 
     def loadCaseData(self):
         filename = '%s/system/controlDict'%self.currentFolder
         self.parsedData = ParsedParameterFile(filename,createZipped=False)
-        
+        self.tracersData = []
         if 'functions' in self.parsedData.getValueDict().keys():
             for key in self.parsedData['functions'].keys():
-                print 'Analyzing %s' % key
                 if self.parsedData['functions'][key]['type'] == 'scalarTransport':
                     tracer = {}
                     tracer['name'] = key
@@ -77,7 +82,6 @@ class tracers(tracersUI):
                         
         if self.patches==[]:
             filename = '%s/U'%(self.timedir)
-            print filename
             UData = ParsedParameterFile(filename,createZipped=False)
             self.patches = UData['boundaryField'].keys()
             for ipatch in self.patches:
@@ -105,6 +109,39 @@ class tracers(tracersUI):
             self.tableWidget.setItem(i,1,item2)
             self.tableWidget.setCellWidget(i,1,wdg2)
 
+    def refreshTimeline(self):
+        if not self.firstPlot:
+            self.figureLayout.removeWidget(self.canvas)
+
+        self.firstPlot = False
+        fig = Figure((2.0, 1.5), dpi=100)
+        self.canvas = FigureCanvas(fig)
+        self.canvas.setParent(self)
+        
+        self.ax = fig.add_subplot(111)
+        self.ax.clear()
+        
+        #levantar el controlDict y ver los tracers
+        
+        Tf = float(self.parsedData['endTime'])
+        T = float(self.currtime)
+        dT = float(self.parsedData['deltaT'])
+        self.ax.set_ylim(0,1.1)
+        self.ax.set_xlim(-10*dT,Tf)
+        self.ax.plot([0,T-dT,T,T+dT,Tf],[0,0,1,0,0], 'k', marker='o', label='Current Time')
+        i = 0
+        for itracer in self.tracersData:
+            Tini = float(itracer['startTime']) 
+            if float(itracer['startTime'])<T:
+                Tini = T
+            self.ax.plot([0,Tini,Tini+dT,Tf],[0,0,1,1], self.colors[i%6], label=itracer['name'])
+            i = i+1
+        self.ax.set_title('Timeline')
+        self.ax.set_xlabel('Time [s]')
+        self.ax.set_ylabel('Event')
+        self.ax.legend(loc=0, fontsize = 'small')       
+        
+        self.figureLayout.addWidget(self.canvas)
 
     def newTracer(self):
         i = self.tableWidget.rowCount()
@@ -126,50 +163,59 @@ class tracers(tracersUI):
         self.tableWidget.removeRow(ii)
         return
         
-    def saveCaseData(self):
+    def saveCaseData(self, doTopoSet=False):
 
         for dd in self.tracersData:
-            print 'Eliminando %s'%dd['name']
             del self.parsedData['functions'][dd['name']]
         
         if 'functions' not in self.parsedData.getValueDict().keys():
             self.parsedData['functions'] = {}
             
+        patches = []
         for i in range(self.tableWidget.rowCount()):
+            patchName = str(self.tableWidget.cellWidget(i,1).currentText())
             newkey = 'T%s'%str(i)
             tracer = copy.deepcopy(dicc)
-            tracer['fvOptions']['S']['timeStart'] = self.tableWidget.cellWidget(i,0).text()
-            tracer['patchName'] = self.tableWidget.cellWidget(i,1).currentText()
+            cellsetname = '%s_c'%patchName
+            
+            tracer['fvOptions']['S']['timeStart'] = str(self.tableWidget.cellWidget(i,0).text())
+            tracer['fvOptions']['S']['cellSet'] = cellsetname
+            tracer['patchName'] = patchName
             del tracer['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate']['T0']
             tracer['fvOptions']['S']['scalarExplicitSetValueCoeffs']['injectionRate'][newkey] = '1'            
             self.parsedData['functions'][newkey] = tracer
-        
+            patches.append(patchName)
         self.parsedData.writeFile()
+        #self.parsedData.closeFile()
         
-#        zg = {}
-#        zg['type'] = 'zeroGradient'
-#
-#        for i in range(0,5):
-#            filename = '%s/T%s'%(self.timedir,str(i))
-#            parsedData = ParsedParameterFile(filename,createZipped=False)
-#
-#            startTime = self.tableWidget.cellWidget(i,0).text()
-#            patchname = self.tableWidget.cellWidget(i,1).currentText()
-#            
-#            oldcb = parsedData['boundaryField'][patchname].copy()
-#            if oldcb['type']=='uniformFixedValue':
-#                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
-#                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
-#            else:
-#                #reemplazo el patch viejo 
-#                for ipatch in parsedData['boundaryField']:
-#                    if parsedData['boundaryField'][ipatch]['type'] == 'uniformFixedValue':
-#                        parsedData['boundaryField'][ipatch] = zg.copy()
-#                parsedData['boundaryField'][patchname] = oldcb
-#                parsedData['boundaryField'][patchname]['type'] = 'uniformFixedValue'
-#                parsedData['boundaryField'][patchname]['uniformValue'] = ('table', [[0, 0.0], [1e6-0.01, 0.0], [1e6, 1.0], [1e6, 1.0]])
-#                parsedData['boundaryField'][patchname]['uniformValue'][1][2][0] = str(startTime)
-#                parsedData['boundaryField'][patchname]['uniformValue'][1][1][0] = str(float(startTime)-0.01)
-#            parsedData.writeFile()
-        
+        if doTopoSet:
+            spatches = set(patches)
+            ii = 0
+            cmd = 'cp caseDicts/topoSetDict %s/system/.'%self.currentFolder
+            os.system(cmd)
+            
+            filename = '%s/system/topoSetDict'%self.currentFolder
+            topoSetData = ParsedParameterFile(filename,createZipped=False)        
+            
+            #armo el topoSet de manera de generar los cellSet deseados
+            for ipatch in spatches:
+                cellsetname = '%s_c'%ipatch
+                facesetname = '%s_f'%ipatch
+                if not os.path.isfile('%s/constant/polyMesh/sets/%s'%(self.currentFolder,cellsetname)):
+                    if ii>0:
+                        topoSetData['actions'].append(topoSetData['actions'][0])
+                        topoSetData['actions'].append(topoSetData['actions'][1])
+                    topoSetData['actions'][ii]['name'] = facesetname
+                    topoSetData['actions'][ii]['sourceInfo']['name'] = ipatch
+                    topoSetData['actions'][ii+1]['name'] = cellsetname
+                    topoSetData['actions'][ii+1]['sourceInfo']['set'] = facesetname                
+                    ii = ii+2
+            topoSetData.writeFile()
+                        
+            cmd = 'topoSet -case %s > run_topoSet.log &'%self.currentFolder
+            os.system(cmd)
+        else:
+            self.loadCaseData()
+            self.refreshTable()
+            self.refreshTimeline()
         return

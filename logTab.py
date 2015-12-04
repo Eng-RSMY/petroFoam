@@ -96,6 +96,7 @@ class logTab(QtGui.QWidget):
 
         self.window().runW.pushButton_run.setEnabled(True)  
         self.window().runW.pushButton_reset.setEnabled(True)  
+        self.window().updateLogFiles()
             
 
     def saveLog(self):

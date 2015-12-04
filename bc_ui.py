@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'bc.ui'
 #
-# Created: Mon Nov 23 17:13:23 2015
+# Created: Fri Dec  4 16:24:50 2015
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -46,18 +46,18 @@ class Ui_bcUI(object):
         self.listWidget = QtGui.QListWidget(self.groupBox)
         self.listWidget.setObjectName(_fromUtf8("listWidget"))
         self.verticalLayout.addWidget(self.listWidget)
-        self.widget = QtGui.QWidget(self.splitter)
-        self.widget.setObjectName(_fromUtf8("widget"))
-        self.gridLayout = QtGui.QGridLayout(self.widget)
+        self.layoutWidget = QtGui.QWidget(self.splitter)
+        self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
+        self.gridLayout = QtGui.QGridLayout(self.layoutWidget)
         self.gridLayout.setMargin(0)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
-        self.label = QtGui.QLabel(self.widget)
+        self.label = QtGui.QLabel(self.layoutWidget)
         self.label.setObjectName(_fromUtf8("label"))
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.comboBox = QtGui.QComboBox(self.widget)
+        self.comboBox = QtGui.QComboBox(self.layoutWidget)
         self.comboBox.setObjectName(_fromUtf8("comboBox"))
         self.gridLayout.addWidget(self.comboBox, 0, 1, 1, 1)
-        self.tabWidget = QtGui.QTabWidget(self.widget)
+        self.tabWidget = QtGui.QTabWidget(self.layoutWidget)
         self.tabWidget.setObjectName(_fromUtf8("tabWidget"))
         self.gridLayout.addWidget(self.tabWidget, 1, 0, 1, 2)
         self.verticalLayout_2.addWidget(self.splitter)
@@ -74,6 +74,7 @@ class Ui_bcUI(object):
         QtCore.QObject.connect(self.listWidget, QtCore.SIGNAL(_fromUtf8("itemSelectionChanged()")), bcUI.changeSelection)
         QtCore.QObject.connect(self.comboBox, QtCore.SIGNAL(_fromUtf8("currentIndexChanged(QString)")), bcUI.changePrototype)
         QtCore.QObject.connect(self.pushButton, QtCore.SIGNAL(_fromUtf8("pressed()")), bcUI.saveBCs)
+        QtCore.QObject.connect(self.listWidget, QtCore.SIGNAL(_fromUtf8("itemDoubleClicked(QListWidgetItem*)")), bcUI.changePatchType)
         QtCore.QMetaObject.connectSlotsByName(bcUI)
 
     def retranslateUi(self, bcUI):

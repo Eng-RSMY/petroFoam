@@ -108,7 +108,7 @@ class runTimeControls(runTimeControlsUI):
         self.format.setCurrentIndex(self.format_ii[parsedData['writeFormat']]) if parsedData.__contains__('writeFormat') else None
         self.precision.setValue(parsedData['writePrecision']) if parsedData.__contains__('writePrecision') else None
         
-        self.compression.setCurrentIndex(self.compression_ii[str(parsedData['writeCompression'])]) if parsedData.__contains__('writeCompression') else None
+        #self.compression.setCurrentIndex(self.compression_ii[str(parsedData['writeCompression'])]) if parsedData.__contains__('writeCompression') else None
         self.precision_time.setValue(parsedData['timePrecision']) if parsedData.__contains__('timePrecision') else None
         
     def onChange1(self, ii):
@@ -141,28 +141,30 @@ class runTimeControls(runTimeControlsUI):
         parsedData = ParsedParameterFile(filename,createZipped=False)
         
         parsedData['startFrom'] = self.cb_start_from_iinv[self.cb_start_from.currentIndex()]
-        parsedData['startTime'] = self.start_from.text()
-        parsedData['endTime'] = self.end_time.text()
-        parsedData['deltaT'] = self.delta_time.text()
+        parsedData['startTime'] = str(self.start_from.text())
+        parsedData['endTime'] = str(self.end_time.text())
+        parsedData['deltaT'] = str(self.delta_time.text())
         if self.adjustable.isChecked():
             parsedData['adjustTimeStep'] = 'yes'
         else:
             parsedData['adjustTimeStep'] = 'no'
-        parsedData['maxCo'] = self.max_cfl.text()
-        parsedData['maxAlphaCo'] = self.max_cfl_alpha.text()
-        parsedData['maxDeltaT'] = self.max_deltat.text()
+        parsedData['maxCo'] = str(self.max_cfl.text())
+        parsedData['maxAlphaCo'] = str(self.max_cfl_alpha.text())
+        parsedData['maxDeltaT'] = str(self.max_deltat.text())
         parsedData['writeControl'] = self.cb_write_control_iinv[self.cb_write_control.currentIndex()]
-        parsedData['writeInterval'] = self.write_control.text()
-        parsedData['purgeWrite'] = self.purge.value()
-        parsedData['writePrecision'] = self.precision.value()
+        parsedData['writeInterval'] = str(self.write_control.text())
+        parsedData['purgeWrite'] = str(self.purge.value())
+        parsedData['writePrecision'] = str(self.precision.value())
         parsedData['writeFormat'] = self.format_iinv[self.format.currentIndex()]
-        parsedData['timePrecision'] = self.precision_time.value()
+        parsedData['timePrecision'] = str(self.precision_time.value())
         parsedData['writeCompression'] = self.compression_iinv[self.compression.currentIndex()]
         parsedData['stopAt'] = 'endTime'
         
         parsedData.writeFile()
         
         self.pushButton.setEnabled(False)
+        
+        self.window().updateLogFiles()
         
         return
 

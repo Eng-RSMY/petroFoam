@@ -51,11 +51,12 @@ types['wall']['U'] = ['fixedValue', 'zeroGradient', 'slip']
 types['wall']['p'] = ['fixedValue', 'zeroGradient', 'fixedFluxPressure', 'uniformFixedValue']
 types['wall']['p_rgh'] = ['fixedValue', 'zeroGradient', 'fixedFluxPressure', 'uniformFixedValue']
 types['wall']['alpha'] = ['fixedValue', 'zeroGradient', 'uniformFixedValue', 'fixedGradient']
-types['wall']['k'] = []
-types['wall']['epsilon'] = []
-types['wall']['omega'] = []
-types['wall']['nut'] = []
-types['wall']['nuTilda'] = []
+types['wall']['k'] = ['zeroGradient']
+types['wall']['epsilon'] = ['zeroGradient']
+types['wall']['omega'] = ['zeroGradient']
+types['wall']['nut'] = ['zeroGradient']
+types['wall']['nuTilda'] = ['zeroGradient']
+types['wall']['nuSgs'] = ['zeroGradient']
 
 types['empty'] = {}
 types['empty']['U'] = ['empty']
@@ -67,6 +68,7 @@ types['empty']['epsilon'] = ['empty']
 types['empty']['omega'] = ['empty']
 types['empty']['nut'] = ['empty']
 types['empty']['nuTilda'] = ['empty']
+types['empty']['nuSgs'] = ['empty']
 
 types['symmetry'] = {}
 types['symmetry']['U'] = ['symmetry']
@@ -78,6 +80,7 @@ types['symmetry']['epsilon'] = ['symmetry']
 types['symmetry']['omega'] = ['symmetry']
 types['symmetry']['nut'] = ['symmetry']
 types['symmetry']['nuTilda'] = ['symmetry']
+types['symmetry']['nuSgs'] = ['symmetry']
 
 types['wedge'] = {}
 types['wedge']['U'] = ['wedge']
@@ -89,6 +92,7 @@ types['wedge']['epsilon'] = ['wedge']
 types['wedge']['omega'] = ['wedge']
 types['wedge']['nut'] = ['wedge']
 types['wedge']['nuTilda'] = ['wedge']
+types['wedge']['nuSgs'] = ['wedge']
 
 types['cyclic'] = {}
 types['cyclic']['U'] = ['cyclic']
@@ -100,6 +104,7 @@ types['cyclic']['epsilon'] = ['cyclic']
 types['cyclic']['omega'] = ['cyclic']
 types['cyclic']['nut'] = ['cyclic']
 types['cyclic']['nuTilda'] = ['cyclic']
+types['cyclic']['nuSgs'] = ['cyclic']
 
 types['cyclicAMI'] = {}
 types['cyclicAMI']['U'] = ['cyclicAMI']
@@ -111,17 +116,19 @@ types['cyclicAMI']['epsilon'] = ['cyclicAMI']
 types['cyclicAMI']['omega'] = ['cyclicAMI']
 types['cyclicAMI']['nut'] = ['cyclicAMI']
 types['cyclicAMI']['nuTilda'] = ['cyclicAMI']
+types['cyclicAMI']['nuSgs'] = ['cyclicAMI']
 
 types['patch'] = {}
 types['patch']['U'] = ['fixedValue', 'zeroGradient', 'slip', 'flowRateInletVelocity', 'uniformFixedValue','inletOutlet']
 types['patch']['p'] = ['fixedValue', 'zeroGradient', 'totalPressure']
 types['patch']['p_rgh'] = ['fixedValue', 'zeroGradient', 'totalPressure']
 types['patch']['alpha'] = ['fixedValue', 'zeroGradient', 'inletOutlet']
-types['patch']['k'] = []
-types['patch']['epsilon'] = []
-types['patch']['omega'] = []
-types['patch']['nut'] = []
-types['patch']['nuTilda'] = []
+types['patch']['k'] = ['zeroGradient','fixedValue']
+types['patch']['epsilon'] = ['zeroGradient','fixedValue']
+types['patch']['omega'] = ['zeroGradient','fixedValue']
+types['patch']['nut'] = ['zeroGradient','fixedValue']
+types['patch']['nuTilda'] = ['zeroGradient','fixedValue']
+types['patch']['nuSgs'] = ['zeroGradient','fixedValue']
 
 extras = {}
 extras['U'] = {}
@@ -162,29 +169,41 @@ extras['alpha']['empty'] = []
 extras['alpha']['symmetry'] = []
 
 extras['k'] = {}
+extras['k']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
 extras['k']['wedge'] = []
 extras['k']['empty'] = []
 extras['k']['symmetry'] = []
+extras['k']['zeroGradient'] = []
 
 extras['epsilon'] = {}
 extras['epsilon']['wedge'] = []
+extras['epsilon']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
 extras['epsilon']['empty'] = []
 extras['epsilon']['symmetry'] = []
+extras['epsilon']['zeroGradient'] = []
 
 extras['omega'] = {}
 extras['omega']['wedge'] = []
+extras['omega']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
 extras['omega']['empty'] = []
 extras['omega']['symmetry'] = []
+extras['omega']['zeroGradient'] = []
 
 extras['nuT'] = {}
 extras['nuT']['wedge'] = []
+extras['nuT']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
 extras['nuT']['empty'] = []
 extras['nuT']['symmetry'] = []
+extras['nuT']['zeroGradient'] = []
+
 
 extras['nuTilda'] = {}
 extras['nuTilda']['wedge'] = []
+extras['nuTilda']['fixedValue'] = ['value','[m2/s2]',['uniform'],1]
 extras['nuTilda']['empty'] = []
 extras['nuTilda']['symmetry'] = []
+extras['nuTilda']['zeroGradient'] = []
+
 
 
 class bcWidget(bcUI):
@@ -214,7 +233,7 @@ class bcWidget(bcUI):
         
         #veo los campos que tengo en el directorio inicial
         [self.timedir,self.fields,currtime] = currentFields(self.currentFolder)
-                
+        print self.fields
         self.loadData()
 
 
@@ -230,7 +249,7 @@ class bcWidget(bcUI):
         self.addTabs()
 
     def changeSelection(self):
-        ipatch = self.listWidget.currentItem().text()
+        ipatch = str(self.listWidget.currentItem().text())
         self.comboBox.clear()
         self.comboBox.addItems(prototypes[self.boundaries[ipatch]['type']])
         self.addTabs(ipatch)
@@ -242,12 +261,15 @@ class bcWidget(bcUI):
             self.clearLayout(layout,0)
         self.tabWidget.clear()
         for ifield in self.fields:
+            if ifield not in unknowns:
+                continue
             widget = QtGui.QWidget()
             layout = QtGui.QVBoxLayout(widget)
             if ipatch:
                 filename = '%s/%s'%(self.timedir,ifield)
                 parsedData = ParsedParameterFile(filename,createZipped=False)
                 thisPatch = parsedData['boundaryField'][ipatch]
+                
                 
                 newComboBox = QtGui.QComboBox()
                 newComboBox.addItems(types[self.boundaries[ipatch]['type']][ifield])
@@ -355,8 +377,8 @@ class bcWidget(bcUI):
         
         ipatch = self.listWidget.currentItem().text()
         for itab in range(self.tabWidget.count()):
-            ifield = self.tabWidget.tabText(itab)
-            itype = self.tabWidget.widget(itab).findChildren(QtGui.QComboBox)[0].currentText()
+            ifield = str(self.tabWidget.tabText(itab))
+            itype = str(self.tabWidget.widget(itab).findChildren(QtGui.QComboBox)[0].currentText())
             layout = self.tabWidget.widget(itab).findChildren(QtGui.QVBoxLayout)[0]
             filename = '%s/%s'%(self.timedir,ifield)
             parsedData = ParsedParameterFile(filename,createZipped=False)
@@ -408,6 +430,26 @@ class bcWidget(bcUI):
         w = bcPatch(self.boundaries[item.text()]['type'])  
         result = w.exec_()
         if result:
-            self.boundaries[item.text()]['type'] = w.getPatchType()
+            patchType = w.getPatchType()
+            self.boundaries[item.text()]['type'] = patchType
             self.boundaries.writeFile()
+            
+            for ifield in self.fields:
+                
+                filename = '%s/%s'%(self.timedir,ifield)
+                fieldData = ParsedParameterFile(filename,createZipped=False)
+
+                newDict = {}
+                if patchType == 'empty':
+                    newDict['type'] = 'empty'
+                else:
+                    if ifield in unknowns:
+                        newDict['type'] = 'zeroGradient'
+                    else:
+                        newDict['type'] = 'calculated'
+                
+                fieldData['boundaryField'][item.text()] = newDict
+
+                fieldData.writeFile()
+
             self.loadData()

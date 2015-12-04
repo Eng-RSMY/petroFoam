@@ -17,12 +17,11 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-
 def main():
     
     import sys, time
     app = QtGui.QApplication(sys.argv)
-
+    
     pixmap = QtGui.QPixmap("images/splash.png")
     splash = QtGui.QSplashScreen(pixmap,QtCore.Qt.WindowStaysOnTopHint)
     splash.show()
@@ -31,12 +30,12 @@ def main():
     window = petroFoam()
     splash.finish(window);
     w = window.newCase()
-    if w:
-        window.show()
-    else:
+    if not w:
         window.close()
-    sys.exit(app.exec_())
-
+        sys.exit()
+    else:
+        window.show()
+        sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()

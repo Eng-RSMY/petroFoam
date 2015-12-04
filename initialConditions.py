@@ -8,6 +8,7 @@ Created on Tue Aug 25 13:08:19 2015
 from PyQt4 import QtGui, QtCore
 from initialConditions_ui import Ui_initialConditionsUI
 import os
+from utils import *
 
 from PyFoam.RunDictionary.BoundaryDict import BoundaryDict
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
@@ -28,7 +29,7 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-
+unknowns = ['U','p','p_rgh','alpha','k','epsilon','omega','nut','nuTilda']
 
 class initialConditionsUI(QtGui.QScrollArea, Ui_initialConditionsUI):
     def __init__(self, parent=None, f=QtCore.Qt.WindowFlags()):
@@ -43,21 +44,7 @@ class initialConditionsWidget(initialConditionsUI):
         self.currentFolder = folder
         initialConditionsUI.__init__(self)
         
-        #veo los campos que tengo en el directorio inicial
-        self.timedir = 0
-        logname = '%s/dirFeatures.log' % self.currentFolder
-        command = 'dirFeaturesFoam -case %s > %s' % (self.currentFolder,logname)
-        os.system(command)
-        log = open(logname, 'r')
-        for linea in log:
-            if "Current Time" in linea:
-                currtime = linea.split('=')[1].strip()
-                self.timedir = '%s/%s'%(self.currentFolder,currtime)
-                
-        #Levanto todos los campos que tengo en el directorio, suponiendo que el solution modeling hizo correctamente su trabajo
-        command = 'rm %s/*~ %s/*.old'%(self.timedir,self.timedir)
-        os.system(command)
-        self.fields = [ f for f in os.listdir(self.timedir) if f not in ['T0', 'T1', 'T2', 'T3', 'T4', 'nonOrth', 'skew'] ]
+        [self.timedir,self.fields,currtime] = currentFields(self.currentFolder)
         
         self.pushButton.setEnabled(False)
         self.addTabs()
@@ -68,6 +55,8 @@ class initialConditionsWidget(initialConditionsUI):
             self.clearLayout(layout,0)
         self.tabWidget.clear()
         for ifield in self.fields:
+            if ifield not in unknowns:
+                continue
             widget = QtGui.QWidget()
             layout = QtGui.QVBoxLayout(widget)
             

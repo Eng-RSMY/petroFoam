@@ -8,6 +8,8 @@ from PyQt4 import QtGui, QtCore
 #from petroFoam.figureGeneralSnapshot import *
 #from petroFoam.figureSampledLine import *
 #from petroFoam.runTimeControls import *
+#from petroFoam.numericalSchemes import *
+#from petroFoam.solverSettings import *
 #from petroFoam.materials import *
 #from petroFoam.solutionModeling import *
 #from petroFoam.mesh import *
@@ -20,9 +22,12 @@ from petroFoam_ui import petroFoamUI
 from popUpNew import *
 from popUpNewFigure import *
 from figureResiduals import *
+from figureTracers import *
 from figureGeneralSnapshot import *
 from figureSampledLine import *
 from runTimeControls import *
+from numericalSchemes import *
+from solverSettings import *
 from materials import *
 from solutionModeling import *
 from mesh import *
@@ -56,6 +61,7 @@ class petroFoam(petroFoamUI):
         petroFoamUI.__init__(self)
 
         self.currentFolder = '.'
+        self.solvername = 'pimpleFoam'
         
         #clase que chequea actualizaciones de directorios y archivos
         self.fs_watcher = QtCore.QFileSystemWatcher()
@@ -66,7 +72,6 @@ class petroFoam(petroFoamUI):
         self.pending_dirs = []
         self.update_watcher()
         
-        self.solvername = 'icoFoam'
         self.firstPlot = 1
 
         self.typeFile = {}
@@ -76,7 +81,7 @@ class petroFoam(petroFoamUI):
         self.qscrollLayout.setGeometry(QtCore.QRect(0, 0, 500, 300))
         self.qfigWidgets = [];
         self.nPlots = 0
-        self.typeFigure = ['Residuals', 'Probes', 'Sampled Line', 'General Snapshot']
+        self.typeFigure = ['Residuals', 'Tracers', 'Probes', 'Sampled Line', 'General Snapshot']
         self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
 
         self.addNewFigureButton()
@@ -93,7 +98,7 @@ class petroFoam(petroFoamUI):
         self.horizontalLayout_3.setObjectName(_fromUtf8("horizontalLayout_3"))
         self.horizontalLayout_3.addWidget(self.meshW)
         
-        self.runW = runWidget(self.currentFolder)
+        self.runW = runWidget(self.currentFolder, self.solvername)
         self.runW.setParent(self)
         self.horizontalLayout_4 = QtGui.QHBoxLayout(self.tab_run)
         self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
@@ -112,45 +117,61 @@ class petroFoam(petroFoamUI):
         QtGui.QMessageBox.about(self, "ERROR", "Primero se debe calcular!")
 
     def openCase(self):
-        posibleDir = QtGui.QFileDialog.getExistingDirectory(self, 'Open Folder', './');
+        posibleDir = str(QtGui.QFileDialog.getExistingDirectory(self, 'Open Folder', './'))
         if posibleDir:
             if os.path.isdir('%s/system'%posibleDir) and os.path.isdir('%s/constant'%posibleDir):
-                self.currentFolder = posibleDir        
+                self.currentFolder = posibleDir
                 self.load_config()
                 self.OnOff(True)
             else:
-                w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The selected directory is not an OpenFOAM case")
+                w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Error", "The selected directory is not an OpenFOAM case")
                 w.exec_()                
 
     def saveAsCase(self):
         oldFolder = self.currentFolder
-        self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './');
+        self.currentFolder = str(QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './'))
         command = 'cp -r %s %s' % (oldFolder, self.currentFolder);
         os.system(command)
         self.save_config()
 
     def newCase(self):
+        if not os.getenv('FOAM_TUTORIALS'):
+            QtGui.QMessageBox(QtGui.QMessageBox.Critical, "Error", "OpenFOAM environment variables are not set. Closing").exec_()
+            return ''
+
         w = popUpNew()
         result = w.exec_()
+
         if result:
+            
             data = w.getData()
-            print 'a grabar en %s'%os.path.join(data[1],data[0])
-            self.currentFolder = os.path.join(data[1],data[0]);
+            self.currentFolder = os.path.join(data[1],data[0])
             if os.path.isdir('%s/system'%self.currentFolder) and os.path.isdir('%s/constant'%self.currentFolder):
                 self.load_config()
             else:
                 #Levantar dependiendo del caso predefinido elegido
-                command = 'cp -r templates/template_icoFoam %s' % self.currentFolder;
-                os.system(command)
+                typeSim = data[2]
+                if typeSim == 'Skimmer Tank':
+                    command = 'cp -r templates/template_skimmer/* %s/.' % self.currentFolder
+                    os.system(command)
+                    self.solvername = 'pimpleFoam'
+                elif typeSim =='Generic':
+                    command = 'cp -r templates/template_icoFoam/* %s/.' % self.currentFolder
+                    os.system(command)
+                    self.solvername = 'icoFoam'
+                #para que pueda sacar algunos datos
+                self.meshW.setCurrentFolder(self.currentFolder)
+                self.meshW.createMesh()
+
             self.OnOff(True)
             self.meshW.setCurrentFolder(self.currentFolder)
-            self.runW.setCurrentFolder(self.currentFolder)
+            self.runW.setCurrentFolder(self.currentFolder,self.solvername)
             self.postproW.setCurrentFolder(self.currentFolder)
         return result
 
     def saveCase(self):
         if self.currentFolder=='.':
-            self.currentFolder = QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './');
+            self.currentFolder = str(QtGui.QFileDialog.getExistingDirectory(self, 'Save As...', './'))
         print('Se guarda como %s',self.currentFolder)
         self.save_config()
 
@@ -165,9 +186,20 @@ class petroFoam(petroFoamUI):
         os.system('paraFoam -builtin -case %s &'%self.currentFolder)
         
     def closeEvent(self, evnt):
-        print "se intenta cerrar"
         self.timer.cancel()
-        #evnt.ignore()
+        if self.currentFolder == '.':
+            evnt.accept()
+        else:
+            quit_msg = "Do you want to save and close the program?"
+            reply = QtGui.QMessageBox.question(self, 'Message', quit_msg, QtGui.QMessageBox.Ok, QtGui.QMessageBox.Discard, QtGui.QMessageBox.Cancel)
+        
+            if reply == QtGui.QMessageBox.Ok:
+                self.save_config()
+                evnt.accept()
+            elif reply == QtGui.QMessageBox.Discard:
+                evnt.accept()
+            else:
+                evnt.ignore()
 
     def keyPressEvent(self, e):
         if e.key() == QtCore.Qt.Key_Escape:
@@ -203,6 +235,27 @@ class petroFoam(petroFoamUI):
                         addFigure = False
             if addFigure:
                 ww = figureResidualsWidget(self.scrollAreaWidgetContents, data['name'])
+                self.pending_files.append(filename)
+
+        if self.typeFigure[index] == 'Tracers':
+            w = figureTracers(self.currentFolder)
+            result = w.exec_()
+            filename = ''
+            if result:
+                data = w.getData()
+                [bas1,bas2,currtime] = currentFields(self.currentFolder)
+                addFigure = True
+                filename = 'postProcessing/%s/%s/faceSource.dat'%(str(data['name']),currtime)
+                if(os.path.isfile('%s/%s'%(self.currentFolder,filename))):
+                    w = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "The output file already exists, do yo want to remove it? (If not, you must choose another log name)", QtGui.QMessageBox.Yes|QtGui.QMessageBox.No)
+                    ret = w.exec_()
+                    if(QtGui.QMessageBox.Yes == ret):
+                        command = 'rm %s/%s'%(self.currentFolder,filename)
+                        os.system(command)
+                    else:
+                        addFigure = False
+            if addFigure:
+                ww = figureTracersWidget(self.scrollAreaWidgetContents, data['name'])
                 self.pending_files.append(filename)
 
         if self.typeFigure[index] == 'Sampled Line':
@@ -323,6 +376,7 @@ class petroFoam(petroFoamUI):
         self.tabWidget_2.removeTab(i)
 
     def file_changed(self,path):
+        path = str(path)
         self.fs_watcher.removePath(path)
         
         if self.typeFile[path]=='log':
@@ -354,6 +408,12 @@ class petroFoam(petroFoamUI):
                 frWidget = self.findChild(figureResidualsWidget,key)
                 frWidget.plot(path)
 
+
+            if 'faceSource.dat' in path:
+                
+                ftWidget = self.findChild(figureTracersWidget,key)
+                ftWidget.plot(path)
+                
         self.fs_watcher.addPath(path)
 
     def directory_changed(self,path):
@@ -395,7 +455,7 @@ class petroFoam(petroFoamUI):
 
 
     def update_watcher(self):
-        print "Actualizando el watcher"
+        #print "Actualizando el watcher"
         i = 0
         while i<len(self.pending_files):
             filename = '%s/%s'%(self.currentFolder,self.pending_files[i])
@@ -431,15 +491,18 @@ class petroFoam(petroFoamUI):
         config['nPlots'] = self.nPlots
         
         #estos 5 deberian volar
-        config['typeFile'] = self.typeFile
-        config['lastPos'] = self.lastPos
+        config['typeFile'] =  self.typeFile
+        config['lastPos'] = str(self.lastPos)
+        config['solver'] = str(self.solvername)
 
         config['namePlots'] = []
         config['typePlots'] = []
         for i in range(self.nPlots):
-            config['namePlots'].append(self.qfigWidgets[i].objectName())
+            config['namePlots'].append(str(self.qfigWidgets[i].objectName()))
             if isinstance(self.qfigWidgets[i],figureResidualsWidget):  
                 config['typePlots'].append('Residuals')
+            if isinstance(self.qfigWidgets[i],figureTracersWidget):  
+                config['typePlots'].append('Tracers')
             elif isinstance(self.qfigWidgets[i],figureSampledLineWidget):  
                 config['typePlots'].append('Sampled Line')
             elif isinstance(self.qfigWidgets[i],figureGeneralSnapshotWidget):  
@@ -454,6 +517,7 @@ class petroFoam(petroFoamUI):
 
     def load_config(self):
         filename = '%s/petroFoam.config'%self.currentFolder
+        
         if os.path.isfile(filename):
             pkl_file = open(filename, 'rb')
             config = pickle.load(pkl_file)
@@ -481,12 +545,12 @@ class petroFoam(petroFoamUI):
             namePlots = config['namePlots']
             typePlots = config['typePlots']
             self.typeFile = config['typeFile']
+            self.solvername = config['solver']
             
-            
+            [bas1,bas2,currtime] = currentFields(self.currentFolder)
             for i in range(self.nPlots):
                 if typePlots[i]=='Residuals':
                     ww = figureResidualsWidget(self.scrollAreaWidgetContents,namePlots[i])
-                    [bas1,bas2,currtime] = currentFields(self.currentFolder)
                     filename = 'postProcessing/%s/%s/residuals.dat'%(namePlots[i],currtime)
                     self.pending_files.append(filename)                    
                 elif typePlots[i]=='Sampled Line':
@@ -496,6 +560,10 @@ class petroFoam(petroFoamUI):
                     self.pending_dirs.append(dirname)                    
                 elif typePlots[i]=='General Snapshot':
                     ww = figureGeneralSnapshotWidget(self.scrollAreaWidgetContents)
+                elif typePlots[i]=='Tracers':
+                    ww = figureTracersWidget(self.scrollAreaWidgetContents,namePlots[i])
+                    filename = 'postProcessing/%s/%s/faceSource.dat'%(namePlots[i],currtime)
+                    self.pending_files.append(filename)
                 ww.setObjectName(namePlots[i])
                 self.qfigWidgets.insert(i,ww)
                 self.qfigWidgets[i].setObjectName(namePlots[i])
@@ -503,9 +571,58 @@ class petroFoam(petroFoamUI):
             self.qscrollLayout.addWidget(self.qfigWidgets[self.nPlots],self.nPlots/2,self.nPlots%2)
                 
         self.meshW.setCurrentFolder(self.currentFolder)
-        self.runW.setCurrentFolder(self.currentFolder)
+        self.runW.setCurrentFolder(self.currentFolder,self.solvername)
+        filename = '%s/constant/polyMesh/points'%self.currentFolder
+        if not os.path.isfile(filename):
+            self.meshW.createMesh()
         self.postproW.setCurrentFolder(self.currentFolder)
         self.meshW.loadMeshData()
+
+    def updateLogFiles(self):
+        [bas1,bas2,currtime] = currentFields(self.currentFolder)
+        spf = set(self.pending_files)
+        for i in range(self.nPlots):
+            namePlot = str(self.qfigWidgets[i].objectName())
+            if isinstance(self.qfigWidgets[i],figureResidualsWidget):  
+                filename = 'postProcessing/%s/%s/residuals.dat'%(namePlot,currtime)
+            if isinstance(self.qfigWidgets[i],figureTracersWidget):  
+                filename = 'postProcessing/%s/%s/faceSource.dat'%(namePlot,currtime)
+            spf.add(filename)
+        self.pending_files = list(spf)
+        
+    def resetCase(self, solvername):
+        self.solvername = solvername
+        self.pending_files = []
+        self.pending_dirs = []
+        self.fs_watcher.removePaths(self.fs_watcher.files())
+        self.fs_watcher.removePaths(self.fs_watcher.directories())
+        
+        if solvername == 'pimpleFoam':
+            command = 'rm -rf %s/*' % self.currentFolder
+            os.system(command)
+            command = 'cp -r templates/template_skimmer/* %s/.' % self.currentFolder
+            os.system(command)            
+        elif solvername =='icoFoam':
+            command = 'rm -rf %s/*' % self.currentFolder
+            os.system(command)
+            command = 'cp -r templates/template_icoFoam/* %s/.' % self.currentFolder
+            os.system(command)
+            
+        for i in range(self.nPlots):
+            self.qscrollLayout.removeWidget(self.qfigWidgets[0])
+            self.qfigWidgets[0].deleteLater()
+            for i in xrange(1,self.nPlots+1): #voy hasta +1 porque tengo el boton
+                self.qfigWidgets[i-1] = self.qfigWidgets[i]
+                self.qscrollLayout.addWidget(self.qfigWidgets[i-1],(i-1)/2,(i-1)%2)
+        
+        self.meshW.createMesh()
+        self.nPlots = 0
+        
+        self.meshW.setCurrentFolder(self.currentFolder)
+        self.runW.setCurrentFolder(self.currentFolder,self.solvername)
+        self.postproW.setCurrentFolder(self.currentFolder)
+
+                
 
     def removeFigure(self, figW):
         removeItem = 0
@@ -594,11 +711,13 @@ class petroFoam(petroFoamUI):
 
     def updateCaseSetup(self,QTreeWidgetItem):
 
+        if not QTreeWidgetItem:
+            return
         menu = QTreeWidgetItem.text(0)
         print menu
         if menu=='Solution Modeling':
             #para el solution modeling no tengo un diccionario
-            widget = solutionModeling(self.currentFolder)
+            widget = solutionModeling(self.currentFolder,self.solvername)
         elif menu=='Run Time Controls':
             widget = runTimeControls(self.currentFolder)
         elif 'phase' in menu:
@@ -608,6 +727,10 @@ class petroFoam(petroFoamUI):
             widget = bcWidget(self.currentFolder)
         elif menu=='Initial Conditions':
             widget = initialConditionsWidget(self.currentFolder)
+        elif menu=='Numerical Schemes':
+            widget = numericalSchemes(self.currentFolder)
+        elif menu=='Solver Settings':
+            widget = solverSettings(self.currentFolder)
         else:
             #do nothing
             return           

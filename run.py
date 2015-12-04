@@ -34,13 +34,14 @@ class runUI(QtGui.QScrollArea, Ui_runUI):
         
 class runWidget(runUI):
     
-    def __init__(self, currentFolder):
+    def __init__(self, currentFolder, solvername):
         runUI.__init__(self)
-        self.solvername = 'icoFoam'
+        self.solvername = solvername
         self.currentFolder = currentFolder
 
-    def setCurrentFolder(self, currentFolder):
+    def setCurrentFolder(self, currentFolder, solvername):
         self.currentFolder = currentFolder
+        self.solvername = solvername
         
     def runCase(self):
         #modifico el control dict porque pude haber parado la simulacion        
@@ -64,8 +65,6 @@ class runWidget(runUI):
         self.pushButton_reset.setEnabled(False)
         self.window().findChild(logTab,'%s/run.log'%self.currentFolder).findChild(QtGui.QPushButton,'pushButton_3').setEnabled(True)
         
-        
-        
     def changeType(self):
         if self.type_serial.isChecked():
             self.num_proc.setEnabled(False)
@@ -83,11 +82,16 @@ class runWidget(runUI):
             command = 'pyFoamClearCase.py %s %s'%(w.getParams(), self.currentFolder)
             os.system(command)
             if w.deleteSnapshots():
-                command = 'rm -r %s/snapshots'%self.currentFolder                
+                command = 'rm -rf %s/snapshots'%self.currentFolder                
                 os.system(command)
             if w.resetFigures():
                 self.window().resetFigures(w.deletePostpro(),w.deleteSnapshots())
-                
+            filename = '%s/system/controlDict'%self.currentFolder
+            parsedData = ParsedParameterFile(filename,createZipped=False)
+            parsedData['startFrom'] = 'startTime'            
+            parsedData['startTime'] = '0'
+            parsedData.writeFile()
+            self.window().updateLogFiles()
 
     def decomposeCase(self):
         return

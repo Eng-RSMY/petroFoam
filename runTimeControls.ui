@@ -25,7 +25,7 @@
    <property name="geometry">
     <rect>
      <x>0</x>
-     <y>0</y>
+     <y>-50</y>
      <width>361</width>
      <height>524</height>
     </rect>
@@ -147,7 +147,7 @@
        <item row="2" column="0">
         <widget class="QLabel" name="label_2">
          <property name="text">
-          <string>End Time:</string>
+          <string>End Time (s):</string>
          </property>
         </widget>
        </item>
@@ -309,6 +309,9 @@
        </item>
        <item row="6" column="2" colspan="2">
         <widget class="QComboBox" name="compression">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <item>
           <property name="text">
            <string>Uncompressed</string>
@@ -375,8 +378,8 @@
    <slot>onChange1()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>184</x>
-     <y>85</y>
+     <x>257</x>
+     <y>44</y>
     </hint>
     <hint type="destinationlabel">
      <x>5</x>
@@ -391,8 +394,8 @@
    <slot>onChange2()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>176</x>
-     <y>173</y>
+     <x>330</x>
+     <y>133</y>
     </hint>
     <hint type="destinationlabel">
      <x>4</x>
@@ -407,8 +410,8 @@
    <slot>aplicar()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>114</x>
-     <y>25</y>
+     <x>115</x>
+     <y>-24</y>
     </hint>
     <hint type="destinationlabel">
      <x>7</x>
@@ -423,8 +426,8 @@
    <slot>editar()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>225</x>
-     <y>24</y>
+     <x>351</x>
+     <y>-25</y>
     </hint>
     <hint type="destinationlabel">
      <x>5</x>
@@ -439,8 +442,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>209</x>
-     <y>82</y>
+     <x>257</x>
+     <y>44</y>
     </hint>
     <hint type="destinationlabel">
      <x>152</x>
@@ -455,8 +458,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>290</x>
-     <y>81</y>
+     <x>343</x>
+     <y>44</y>
     </hint>
     <hint type="destinationlabel">
      <x>356</x>
@@ -471,8 +474,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>271</x>
-     <y>118</y>
+     <x>343</x>
+     <y>75</y>
     </hint>
     <hint type="destinationlabel">
      <x>355</x>
@@ -487,8 +490,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>145</y>
+     <x>343</x>
+     <y>106</y>
     </hint>
     <hint type="destinationlabel">
      <x>356</x>
@@ -503,8 +506,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>253</x>
-     <y>170</y>
+     <x>343</x>
+     <y>133</y>
     </hint>
     <hint type="destinationlabel">
      <x>355</x>
@@ -519,8 +522,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>236</x>
-     <y>212</y>
+     <x>343</x>
+     <y>164</y>
     </hint>
     <hint type="destinationlabel">
      <x>360</x>
@@ -535,8 +538,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>303</x>
-     <y>228</y>
+     <x>343</x>
+     <y>195</y>
     </hint>
     <hint type="destinationlabel">
      <x>359</x>
@@ -551,8 +554,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>304</x>
-     <y>265</y>
+     <x>343</x>
+     <y>226</y>
     </hint>
     <hint type="destinationlabel">
      <x>356</x>
@@ -567,8 +570,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>216</x>
-     <y>332</y>
+     <x>230</x>
+     <y>293</y>
     </hint>
     <hint type="destinationlabel">
      <x>361</x>
@@ -583,8 +586,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>325</x>
-     <y>327</y>
+     <x>343</x>
+     <y>293</y>
     </hint>
     <hint type="destinationlabel">
      <x>362</x>
@@ -599,8 +602,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>255</x>
-     <y>362</y>
+     <x>343</x>
+     <y>324</y>
     </hint>
     <hint type="destinationlabel">
      <x>357</x>
@@ -615,8 +618,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>285</x>
-     <y>399</y>
+     <x>343</x>
+     <y>355</y>
     </hint>
     <hint type="destinationlabel">
      <x>354</x>
@@ -631,8 +634,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>279</x>
-     <y>424</y>
+     <x>343</x>
+     <y>386</y>
     </hint>
     <hint type="destinationlabel">
      <x>355</x>
@@ -647,8 +650,8 @@
    <slot>onChangeSomething()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>268</x>
-     <y>456</y>
+     <x>343</x>
+     <y>417</y>
     </hint>
     <hint type="destinationlabel">
      <x>356</x>

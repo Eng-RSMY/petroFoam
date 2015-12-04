@@ -97,7 +97,7 @@ class figureSampledLine(figureSampledLineUI):
         data['p2y'] = self.p2_y.text()
         data['p2z'] = self.p2_z.text()
         data['nop'] = self.nop.value()
-        data['name'] = self.name.text()
+        data['name'] = str(self.name.text())
         data['autorefreshing'] = self.autorefreshing.currentText()
         
         return data
@@ -148,14 +148,14 @@ class figureSampledLine(figureSampledLineUI):
         parsedData = ParsedParameterFile(filename,createZipped=False)
         if 'functions' not in parsedData.getValueDict().keys():
             parsedData['functions'] = {}
-        if self.name.text() not in parsedData['functions'].keys():
-            parsedData['functions'][self.name.text()] = {}
+        if str(self.name.text()) not in parsedData['functions'].keys():
+            parsedData['functions'][str(self.name.text())] = {}
         
-        parsedData['functions'][self.name.text()]['type'] = 'sets'
-        parsedData['functions'][self.name.text()]['outputControl'] = 'timeStep'
-        parsedData['functions'][self.name.text()]['outputInterval'] = self.spinBox.value()
-        parsedData['functions'][self.name.text()]['setFormat'] = 'raw'
-        parsedData['functions'][self.name.text()]['interpolationScheme'] = 'cellPoint'
+        parsedData['functions'][str(self.name.text())]['type'] = 'sets'
+        parsedData['functions'][str(self.name.text())]['outputControl'] = 'timeStep'
+        parsedData['functions'][str(self.name.text())]['outputInterval'] = self.spinBox.value()
+        parsedData['functions'][str(self.name.text())]['setFormat'] = 'raw'
+        parsedData['functions'][str(self.name.text())]['interpolationScheme'] = 'cellPoint'
         ifield = self.comboBox.currentText()
         if ifield not in self.fields:
             #significa que es un vector
@@ -163,15 +163,15 @@ class figureSampledLine(figureSampledLineUI):
             ifield = ifield[0:-1]
         else:
             axis = 'distance' #por las dudas        
-        parsedData['functions'][self.name.text()]['fields'] = [ifield]
+        parsedData['functions'][str(self.name.text())]['fields'] = [ifield]
         
         dicc = {}
         dicc['nPoints'] = self.nop.text()
-        dicc['start'] = '(%s %s %s)'%(self.p1_x.text(),self.p1_y.text(),self.p1_z.text())
-        dicc['end'] = '(%s %s %s)'%(self.p2_x.text(),self.p2_y.text(),self.p2_z.text())
+        dicc['start'] = '(%s %s %s)'%(str(self.p1_x.text()),str(self.p1_y.text()),str(self.p1_z.text()))
+        dicc['end'] = '(%s %s %s)'%(str(self.p2_x.text()),str(self.p2_y.text()),str(self.p2_z.text()))
         dicc['type'] = 'uniform'
         dicc['axis'] = axis
-        parsedData['functions'][self.name.text()]['sets'] = ['data',dicc]
+        parsedData['functions'][str(self.name.text())]['sets'] = ['data',dicc]
         
         parsedData.writeFile()
         

@@ -19,6 +19,9 @@ types['alpha'] = 'scalar'
 types['nut'] = 'scalar'
 types['nuTilda'] = 'scalar'
 
+unknowns = ['U','p','p_rgh','alpha','k','epsilon','omega','nut','nuTilda']
+
+
 def drange(start, stop, step):
     r = start
     while r < stop:
@@ -162,7 +165,8 @@ def command_window(palette):
     brush.setStyle(QtCore.Qt.SolidPattern)
     palette.setBrush(QtGui.QPalette.Disabled, QtGui.QPalette.ToolTipText, brush)
     
-def currentFields(currentFolder):
+    
+def currentFields(currentFolder,filterTurb=True):
     #veo los campos que tengo en el directorio inicial
         timedir = 0
         currtime = 0
@@ -175,11 +179,36 @@ def currentFields(currentFolder):
                 currtime = linea.split('=')[1].strip()
                 timedir = '%s/%s'%(currentFolder,currtime)
                 
-        #Levanto todos los campos que tengo en el directorio, suponiendo que el solution modeling hizo correctamente su trabajo
-        command = 'rm %s/*~ %s/*.old'%(timedir,timedir)
+        from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
+        #Levanto todos los campos y me fijo cual se ca a utilizar (dependiendo del turbulence model)
+        allturb = ['k','epsilon','omega','nuSgs']
+        #le dejo los que voy a utilizar
+        filename = '%s/constant/turbulenceProperties'%currentFolder
+        tprop = ParsedParameterFile(filename,createZipped=False)    
+        if tprop['simulationType']=='RASModel':
+            filename = '%s/constant/RASProperties'%currentFolder
+            Rprop = ParsedParameterFile(filename,createZipped=False)    
+            if Rprop['RASModel']=='kEpsilon':
+                allturb.remove('k')
+                allturb.remove('epsilon')
+            if Rprop['RASModel']=='kOmega' or Rprop['RASModel']=='kOmegaSST':
+                allturb.remove('k')
+                allturb.remove('omega')
+        elif tprop['simulationType']=='LESModel':
+            filename = '%s/constant/LESProperties'%self.currentFolder
+            Lprop = ParsedParameterFile(filename,createZipped=False)    
+            if Lprop['LESModel']=='Smagorinsky':  
+                allturb.remove('nuSgs')
+                
+        NO_FIELDS = ['T0', 'T1', 'T2', 'T3', 'T4', 'nonOrth', 'skew']
+        if filterTurb:
+            for it in allturb:
+                NO_FIELDS.append(it)
+
+        print NO_FIELDS
+        command = 'rm -f %s/*~ %s/*.old'%(timedir,timedir)
         os.system(command)
         while not os.path.isfile(logname):
             continue
-        print timedir
-        fields = [ f for f in os.listdir(timedir) if f not in ['T0', 'T1', 'T2', 'T3', 'T4', 'nonOrth', 'skew'] ]
+        fields = [ f for f in os.listdir(timedir) if f not in NO_FIELDS ]
         return [timedir,fields,currtime]

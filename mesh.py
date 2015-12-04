@@ -7,11 +7,13 @@ Created on Tue Aug 25 13:08:19 2015
 
 from PyQt4 import QtGui, QtCore
 from mesh_ui import Ui_meshUI
+from utils import *
+
+from PyFoam.RunDictionary.BoundaryDict import BoundaryDict
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from utils import drange
 from numpy import arange
 
 try:
@@ -52,6 +54,7 @@ class meshWidget(meshUI):
         self.window().newLogTab('Create Mesh','%s/createMesh.log'%self.currentFolder)
         command = 'blockMesh -case %s > %s/createMesh.log &'%(self.currentFolder,self.currentFolder)
         os.system(command)
+        self.checkMesh()
         
         
     def checkMesh(self):
@@ -62,7 +65,6 @@ class meshWidget(meshUI):
         os.system(command)
         command = 'meshQuality -case %s -time 0 > %s/meshQuality.log &'%(self.currentFolder,self.currentFolder)
         os.system(command)
-        self.loadMeshData()
         
     def importMesh(self):
         dialog = QtGui.QFileDialog(self)
@@ -78,11 +80,11 @@ class meshWidget(meshUI):
                 utility = 'fluentMeshToFoam'
             elif 'GMSH' in tipo:
                 utility = 'gmshToFoam'
-            command = '%s -case %s %s > %s/createMesh.log &' %(utility, self.currentFolder, filename, self.currentFolder)
-            print command
+            #command = '%s -case %s %s > %s/createMesh.log &' %(utility, self.currentFolder, filename, self.currentFolder)
+            command = '%s -case %s %s > %s/createMesh.log' %(utility, self.currentFolder, filename, self.currentFolder)
             os.system(command)
             self.window().newLogTab('Import Mesh','%s/createMesh.log'%self.currentFolder)
-            self.loadMeshData()
+            self.updateFieldFiles()
 
     def drawGeo(self):
         command = 'pyFoamDisplayBlockMesh.py %s/constant/polyMesh/blockMeshDict &'%self.currentFolder 
@@ -95,7 +97,6 @@ class meshWidget(meshUI):
         return
         
     def loadMeshData(self):
-        
         filename = '%s/checkMesh.log'%self.currentFolder
         if os.path.isfile(filename):
             log = open(filename, 'r')
@@ -125,6 +126,8 @@ class meshWidget(meshUI):
             log.close()
             if 0:
                 self.textEdit_quality.setText(info)
+        else:
+            QtGui.QMessageBox(QtGui.QMessageBox.Information, "Error", "CheckMesh must be executed before").exec_()
 
         
     def drawStatistics(self):
@@ -186,9 +189,36 @@ class meshWidget(meshUI):
         if not os.path.isfile(filequa):
             command = 'meshQuality -case %s -time 0 > %s/meshQuality.log &'%(self.currentFolder,self.currentFolder)
             os.system(command)
-            self.loadMeshData()
         #command = 'pvpython /usr/local/bin/pyFoamPVLoadState.py --state=meshNonOrth.pvsm %s &'%self.currentFolder
         command = 'pvpython /usr/local/bin/pyFoamPVLoadState.py --state=meshNonOrthWhite.pvsm %s &'%self.currentFolder
         os.system(command)
+        
+        return
+        
+    def updateFieldFiles(self):
+        #tengo que releer cada uno de los campos en el directorio actual, 
+        #pisar los boundaries por los que aparece en constant/polyMesh/boundary
+        #imponerles alguna CB por defecto dependiendo del tipo de patch
+        boundaries = BoundaryDict(self.currentFolder)
+        #veo los campos que tengo en el directorio inicial
+        [timedir,fields,currtime] = currentFields(self.currentFolder, False)
+        
+        for ifield in fields:
+            filename = '%s/%s'%(timedir,ifield)
+            fieldData = ParsedParameterFile(filename,createZipped=False)
+            
+            fieldData['boundaryField'] = {}
+            for ipatch in boundaries.getValueDict():
+                if ipatch not in fieldData['boundaryField']:
+                    if boundaries[ipatch]['nFaces']==0:
+                        continue
+                    patchDict={}
+                    if ifield in unknowns:
+                        patchDict['type'] = 'zeroGradient'
+                    else:                    
+                        patchDict['type'] = 'calculated'
+                    fieldData['boundaryField'][ipatch] = patchDict
+            
+            fieldData.writeFile()
         
         return

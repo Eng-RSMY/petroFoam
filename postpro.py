@@ -64,7 +64,7 @@ class postproWidget(postproUI):
         os.system('paraFoam -builtin -case %s &'%self.currentFolder)
 
     def exportData(self):
-        opt = self.comboBox.currentText()
+        opt = str(self.comboBox.currentText())
         filename = '%s/export.log'%self.currentFolder
         self.window().newLogTab('Export',filename)
         if opt=='VTK':
@@ -87,18 +87,16 @@ class postproWidget(postproUI):
         return
     
     def calculate1(self):
-        print 'In calculate 1'
         tt = ''
         if self.time_1.currentText=='Latest Time':
             tt = '-latestTime'
         filename = '%s/field_calculation.log'%self.currentFolder
         self.window().newLogTab('Postpro Field',filename)
-        action = '%s -case %s %s > %s'%(apps[self.field_1.currentText()],self.currentFolder, tt, filename)
+        action = '%s -case %s %s > %s'%(apps[str(self.field_1.currentText())],self.currentFolder, tt, filename)
         os.system(action)
         return
 
     def calculate2(self):
-        print 'In calculate 2'
         tt = ''
         if self.time_2.currentText=='Latest Time':
             tt = '-latestTime'
@@ -112,20 +110,19 @@ class postproWidget(postproUI):
                 QtGui.QMessageBox(QtGui.QMessageBox.Information, "Caution", "Action can not be done!").exec_()
                 return
         self.window().newLogTab('Postpro Wall',filename)
-        action = '%s -case %s %s > %s'%(apps[self.field_2.currentText()],self.currentFolder, tt, filename)
+        action = '%s -case %s %s > %s'%(apps[str(self.field_2.currentText())],self.currentFolder, tt, filename)
         os.system(action)
         return
         
     def calculate3(self):
-        print 'In calculate 3'
         tt = ''
         if self.time_3.currentText=='Latest Time':
             tt = '-latestTime'
         filename = '%s/patch_calculation.log'%self.currentFolder
         self.window().newLogTab('Postpro Patch',filename)
-        fieldName = self.field_3.currentText()
-        patchName = self.bou_3.currentText()
-        action = '%s -case %s  %s %s %s > %s &' %(apps[self.type_3.currentText()],self.currentFolder,tt,fieldName,patchName,filename)
+        fieldName = str(self.field_3.currentText())
+        patchName = str(self.bou_3.currentText())
+        action = '%s -case %s  %s %s %s > %s &' %(apps[str(self.type_3.currentText())],self.currentFolder,tt,fieldName,patchName,filename)
         os.system(action)
         
         return

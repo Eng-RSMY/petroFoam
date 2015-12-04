@@ -6,7 +6,7 @@ Created on Tue Aug 25 13:08:19 2015
 """
 
 from PyQt4 import QtGui, QtCore
-from figureResiduals_ui import figureResidualsUI
+from figureTracers_ui import figureTracersUI
 from myNavigationToolbar import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
@@ -50,27 +50,50 @@ except AttributeError:
 #      );
 #  }
 #
-unknowns = ['U','p','p_rgh','alpha','k','epsilon','omega','nut','nuTilda']
+dicc = {}
+dicc['type'] = 'faceSource'
+dicc['functionObjectLibs'] =  ['"libfieldFunctionObjects.so"']
+dicc['outputControl']  = 'timeStep'
+dicc['log'] = 'true'
+dicc['valueOutput'] = 'false'
+dicc['source'] = 'patch'
+dicc['sourceName'] = 'outlet'
+dicc['operation'] = 'areaAverage'
+dicc['fields'] = []
 
-class figureResiduals(figureResidualsUI):
+class figureTracers(figureTracersUI):
 
     def __init__(self, currentFolder):
-        figureResidualsUI.__init__(self)
+        figureTracersUI.__init__(self)
         self.currentFolder = currentFolder
         self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
         
         [self.timedir,self.fields,bas] = currentFields(self.currentFolder)
+        
+        filename = '%s/system/controlDict'%self.currentFolder
+        self.parsedData = ParsedParameterFile(filename,createZipped=False)
+        
+        self.tracersData = []
+        if 'functions' in self.parsedData.getValueDict().keys():
+            for key in self.parsedData['functions'].keys():
+                if self.parsedData['functions'][key]['type'] == 'scalarTransport':
+                    tracer = {}
+                    tracer['name'] = key
+                    tracer['patchName'] = self.parsedData['functions'][key]['patchName']
+                    tracer['startTime'] = self.parsedData['functions'][key]['fvOptions']['S']['timeStart']
+                    self.tracersData.append(tracer)
 
-        for field in self.fields:
-            if field not in unknowns:
-                continue
+        for tracer in self.tracersData:
             item = QtGui.QListWidgetItem()
             item.setCheckState(QtCore.Qt.Unchecked)
-            item.setText(field)
+            item.setText(tracer['name'])
             self.listWidget.addItem(item)
             
-        #Reading from controlDict Function Objects
-        # No hace falta porque siempre se abre uno nuevo??
+        from PyFoam.RunDictionary.BoundaryDict import BoundaryDict
+        boundaries = BoundaryDict(str(self.currentFolder))
+        for ipatch in boundaries.getValueDict():
+            if boundaries[ipatch]['type']  != 'empty':
+                self.comboBox.addItem(ipatch)
         
     def getData(self):
         data = {}
@@ -90,7 +113,7 @@ class figureResiduals(figureResidualsUI):
         if 'functions' in parsedData.getValueDict().keys():
             if data['name'] in parsedData['functions'].keys():
                 dicc = parsedData['functions'][data['name']]
-                if dicc['type']=='residuals':
+                if dicc['type']=='faceSource':
                     self.name.setText(data['name'])
                     self.spinBox.setValue(dicc['outputInterval'])
                     for i in range(self.listWidget.count()):
@@ -116,25 +139,21 @@ class figureResiduals(figureResidualsUI):
         parsedData = ParsedParameterFile(filename,createZipped=False)
         if 'functions' not in parsedData.getValueDict().keys():
             parsedData['functions'] = {}
-        if str(self.name.text()) not in parsedData['functions'].keys():
-            parsedData['functions'][str(self.name.text())] = {}
         
-        parsedData['functions'][str(self.name.text())]['type'] = 'residuals'
-        parsedData['functions'][str(self.name.text())]['outputControl'] = 'timeStep'
-        parsedData['functions'][str(self.name.text())]['outputInterval'] = self.spinBox.value()
-        parsedData['functions'][str(self.name.text())]['functionObjectLibs'] = ['"libutilityFunctionObjects.so"']
+        dicc['outputInterval'] = self.spinBox.value()
         fields = []        
         for i in range(self.listWidget.count()):
             if self.listWidget.item(i).checkState() == QtCore.Qt.Checked:
                 fields.append(str(self.listWidget.item(i).text()))
-        parsedData['functions'][str(self.name.text())]['fields'] = fields
-        
+        dicc['fields'] = fields
+        dicc['sourceName'] = str(self.comboBox.currentText())        
+        parsedData['functions'][str(self.name.text())] = dicc
         parsedData.writeFile()
         
         self.done(self.Accepted)
             
             
-class figureResidualsWidget(QtGui.QWidget):
+class figureTracersWidget(QtGui.QWidget):
 
     def __init__(self, scrollAreaWidgetContents, name):         
         QtGui.QWidget.__init__(self)
@@ -145,10 +164,9 @@ class figureResidualsWidget(QtGui.QWidget):
         toolbar = myNavigationToolbar(canvas, self)
         axes = fig.add_subplot(111)
         axes.autoscale(True)
-        axes.set_yscale('log')
         axes.set_title(name)
         axes.set_xlabel('Time [s]')
-        axes.set_ylabel('|R|')
+        axes.set_ylabel('T')
 
          # place plot components in a layout
         plotLayout = QtGui.QVBoxLayout()
@@ -158,7 +176,7 @@ class figureResidualsWidget(QtGui.QWidget):
         
         self.dataPlot = []
         self.dirList = []
-        self.dirType = 'Residuals'
+        self.dirType = 'Tracers'
         self.lastPos = -1
         self.name = name
         self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
@@ -177,6 +195,8 @@ class figureResidualsWidget(QtGui.QWidget):
                 
         with open(path, 'r') as archi:
             #archi.seek(1)
+            archi.readline()
+            archi.readline()
             archi.readline()
             headers = archi.readline()
             headers = headers.split('\t')
@@ -198,26 +218,21 @@ class figureResidualsWidget(QtGui.QWidget):
 
             #print self.dataPlot
             if(self.dataPlot.ndim>1):
-                self.dataPlot = self.dataPlot[-100:,:]
+                #self.dataPlot = self.dataPlot[-250:,:]
                 axes.clear()
                 for i in range(len(headers)):
                     line = axes.plot(self.dataPlot[:,0],self.dataPlot[:,i+1],self.colors[i%6], label=headers[i])
-                miny = numpy.amin(self.dataPlot[:,1:])
-                maxy = miny*1e3
-                axes.set_ylim(miny,maxy)
-                axes.set_yscale('log')
-
+                axes.autoscale(True)
                 axes.set_title(self.name)
                 axes.set_xlabel('Time [s]')
-                axes.set_ylabel('|R|')
-                axes.legend(loc=1, fontsize = 'small')
+                axes.set_ylabel('T')
 
                 canvas.draw()
                 
     def resetFigure(self):
         self.dataPlot = []
         self.dirList = []
-        self.dirType = 'Residuals'
+        self.dirType = 'Tracers'
         self.lastPos = -1
         self.colors = ['r', 'b', 'k', 'g', 'y', 'c']
         
